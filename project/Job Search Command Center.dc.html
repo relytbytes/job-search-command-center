@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { background: #efeae1; }
+  [data-tracker] { --accent: #b0542f; }
+  ::-webkit-scrollbar { height: 10px; width: 10px; }
+  ::-webkit-scrollbar-thumb { background: #d3cdc0; border-radius: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { color: #8f4223; text-decoration: underline; }
+  @keyframes slideIn { from { transform: translateX(24px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+</style>
+</helmet>
+
+<div data-tracker="1" style="min-height: 100vh; font-family: 'IBM Plex Sans', sans-serif; color: #211f1b; background: #efeae1; display: flex; flex-direction: column;">
+
+  <header style="position: sticky; top: 0; z-index: 20; background: rgba(239,234,225,0.92); backdrop-filter: blur(10px); border-bottom: 1px solid #ddd6c9;">
+    <div style="max-width: 1320px; margin: 0 auto; padding: 18px 28px 0; display: flex; flex-direction: column; gap: 14px;">
+      <div style="display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+        <div>
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); font-weight: 600;">Job Search · Command Center</div>
+          <h1 style="font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 30px; margin: 4px 0 0; letter-spacing: -0.01em;">Tyler Shelton</h1>
+        </div>
+        <div style="font-size: 13px; color: #6f6a60; max-width: 340px; text-align: right; line-height: 1.5;">{{ total }} roles tracked · updated live as you move cards through the pipeline.</div>
+      </div>
+      <nav style="display: flex; gap: 4px;">
+        <button onClick="{{ setTab }}" data-tab="pipeline" style="{{ tabStylePipeline }}">Pipeline</button>
+        <button onClick="{{ setTab }}" data-tab="terms" style="{{ tabStyleTerms }}">Search Strings</button>
+        <button onClick="{{ setTab }}" data-tab="boards" style="{{ tabStyleBoards }}">Job Boards</button>
+      </nav>
+    </div>
+  </header>
+
+  <main style="flex: 1; width: 100%;">
+
+    <!-- PIPELINE -->
+    <sc-if value="{{ isPipeline }}" hint-placeholder-val="{{ true }}">
+    <div style="max-width: 1320px; margin: 0 auto; padding: 22px 28px 60px;">
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px;">
+        <sc-for list="{{ stats }}" as="s" hint-placeholder-count="5">
+          <div style="background: #fffdf9; border: 1px solid #e4ded1; border-radius: 12px; padding: 14px 16px;">
+            <div style="font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 600; line-height: 1; color: {{ s.color }};">{{ s.value }}</div>
+            <div style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: #8a857b; margin-top: 8px;">{{ s.label }}</div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="background: #211f1b; color: #f4efe6; border-radius: 14px; padding: 16px 20px; margin-bottom: 22px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: #d99a7f; font-weight: 600;">Focus Queue</div>
+        <div style="display: flex; gap: 22px; flex-wrap: wrap; flex: 1;">
+          <sc-for list="{{ queue }}" as="q" hint-placeholder-count="4">
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <span style="font-size: 14px; font-weight: 600;">{{ q.co }}</span>
+              <span style="font-size: 12px; color: #b8b1a4;">{{ q.action }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 18px;">
+        <div style="position: relative; flex: 1; min-width: 200px;">
+          <input value="{{ query }}" onInput="{{ setQuery }}" placeholder="Search company, role, location…" style="width: 100%; padding: 10px 14px; border: 1px solid #ddd6c9; border-radius: 10px; background: #fffdf9; font-family: 'IBM Plex Sans', sans-serif; font-size: 14px; color: #211f1b; outline: none;" />
+        </div>
+        <div style="display: flex; background: #e6e0d4; border-radius: 10px; padding: 3px;">
+          <button onClick="{{ setView }}" data-view="board" style="{{ viewStyleBoard }}">Board</button>
+          <button onClick="{{ setView }}" data-view="table" style="{{ viewStyleTable }}">Table</button>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px;">
+        <sc-for list="{{ trackChips }}" as="t" hint-placeholder-count="6">
+          <button onClick="{{ setTrack }}" data-track="{{ t.key }}" style="{{ t.style }}">{{ t.label }}</button>
+        </sc-for>
+      </div>
+      <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 22px; align-items: center;">
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #a39d90; margin-right: 4px;">Priority</span>
+        <sc-for list="{{ prioChips }}" as="p" hint-placeholder-count="5">
+          <button onClick="{{ setPriority }}" data-prio="{{ p.key }}" style="{{ p.style }}">{{ p.label }}</button>
+        </sc-for>
+      </div>
+
+      <!-- BOARD -->
+      <sc-if value="{{ isBoard }}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; gap: 14px; overflow-x: auto; padding-bottom: 16px; align-items: flex-start;">
+        <sc-for list="{{ columns }}" as="col" hint-placeholder-count="6">
+          <div data-status="{{ col.key }}" onDragOver="{{ onDragOver }}" onDrop="{{ onDrop }}" style="flex: 0 0 272px; width: 272px; background: #e8e2d6; border-radius: 14px; padding: 10px; display: flex; flex-direction: column; gap: 10px; min-height: 120px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 6px 2px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="width: 9px; height: 9px; border-radius: 3px; background: {{ col.color }};"></span>
+                <span style="font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 13.5px;">{{ col.label }}</span>
+              </div>
+              <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #8a857b;">{{ col.count }}</span>
+            </div>
+            <sc-for list="{{ col.cards }}" as="card" hint-placeholder-count="2">
+              <div draggable="true" data-id="{{ card.id }}" onDragStart="{{ onDragStart }}" onDragEnd="{{ onDragEnd }}" onClick="{{ openCard }}" style="background: #fffdf9; border: 1px solid #e4ded1; border-left: 3px solid {{ card.prioColor }}; border-radius: 10px; padding: 11px 12px; cursor: grab; box-shadow: 0 1px 2px rgba(60,50,30,0.04);">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px;">
+                  <span style="font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 14px; line-height: 1.25;">{{ card.co }}</span>
+                </div>
+                <div style="font-size: 12.5px; color: #55504a; margin-top: 3px; line-height: 1.35;">{{ card.role }}</div>
+                <div style="display: flex; gap: 5px; flex-wrap: wrap; margin-top: 9px; align-items: center;">
+                  <sc-if value="{{ card.hasTrack }}" hint-placeholder-val="{{ true }}">
+                    <span style="font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); background: #f7ede6; padding: 2px 6px; border-radius: 5px;">{{ card.track }}</span>
+                  </sc-if>
+                  <sc-if value="{{ card.hasSal }}" hint-placeholder-val="{{ true }}">
+                    <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #6f6a60;">{{ card.sal }}</span>
+                  </sc-if>
+                </div>
+                <div style="font-size: 11px; color: #a39d90; margin-top: 7px;">{{ card.loc }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-for>
+      </div>
+      </sc-if>
+
+      <!-- TABLE -->
+      <sc-if value="{{ isTable }}" hint-placeholder-val="{{ true }}">
+      <div style="background: #fffdf9; border: 1px solid #e4ded1; border-radius: 14px; overflow: hidden;">
+        <div style="overflow-x: auto;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px; min-width: 820px;">
+            <thead>
+              <tr style="background: #f0eadd; text-align: left;">
+                <th style="padding: 11px 14px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: #8a857b; font-weight: 600;">Company</th>
+                <th style="padding: 11px 14px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: #8a857b; font-weight: 600;">Role</th>
+                <th style="padding: 11px 14px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: #8a857b; font-weight: 600;">Track</th>
+                <th style="padding: 11px 14px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: #8a857b; font-weight: 600;">Status</th>
+                <th style="padding: 11px 14px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: #8a857b; font-weight: 600;">Priority</th>
+                <th style="padding: 11px 14px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: #8a857b; font-weight: 600;">Location</th>
+                <th style="padding: 11px 14px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: #8a857b; font-weight: 600;">Salary</th>
+              </tr>
+            </thead>
+            <tbody>
+              <sc-for list="{{ tableRows }}" as="row" hint-placeholder-count="12">
+                <tr onClick="{{ openCard }}" data-id="{{ row.id }}" style="border-top: 1px solid #efe9dc; cursor: pointer;">
+                  <td style="padding: 11px 14px; font-weight: 600; font-family: 'Space Grotesk', sans-serif;">{{ row.co }}</td>
+                  <td style="padding: 11px 14px; color: #55504a;">{{ row.role }}</td>
+                  <td style="padding: 11px 14px; color: #6f6a60; font-size: 12px;">{{ row.track }}</td>
+                  <td style="padding: 11px 14px;"><span style="font-size: 11.5px; font-weight: 600; padding: 3px 9px; border-radius: 20px; color: {{ row.statusColor }}; background: {{ row.statusBg }};">{{ row.status }}</span></td>
+                  <td style="padding: 11px 14px;"><span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: #55504a;"><span style="width: 8px; height: 8px; border-radius: 50%; background: {{ row.prioColor }};"></span>{{ row.prio }}</span></td>
+                  <td style="padding: 11px 14px; color: #6f6a60; font-size: 12px;">{{ row.loc }}</td>
+                  <td style="padding: 11px 14px; color: #6f6a60; font-family: 'IBM Plex Mono', monospace; font-size: 11px;">{{ row.sal }}</td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      </sc-if>
+
+    </div>
+    </sc-if>
+
+    <!-- SEARCH STRINGS -->
+    <sc-if value="{{ isTerms }}" hint-placeholder-val="{{ true }}">
+    <div style="max-width: 960px; margin: 0 auto; padding: 26px 28px 60px;">
+      <p style="font-size: 14px; color: #6f6a60; margin: 0 0 24px; line-height: 1.55;">Paste directly into LinkedIn or Indeed keyword search — or into Google as <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; background: #e6e0d4; padding: 2px 6px; border-radius: 5px;">site:linkedin.com/jobs [string]</span></p>
+      <sc-for list="{{ termGroups }}" as="g" hint-placeholder-count="8">
+        <div style="margin-bottom: 30px;">
+          <h3 style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 600; margin: 0 0 12px; display: flex; align-items: center; gap: 10px;"><span style="width: 6px; height: 18px; border-radius: 3px; background: var(--accent);"></span>{{ g.title }}</h3>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <sc-for list="{{ g.items }}" as="it" hint-placeholder-count="4">
+              <div style="background: #fffdf9; border: 1px solid #e4ded1; border-radius: 10px; padding: 12px 14px; display: flex; align-items: flex-start; gap: 12px;">
+                <code style="flex: 1; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; line-height: 1.55; color: #33302b; white-space: pre-wrap; word-break: break-word;">{{ it.text }}</code>
+                <button onClick="{{ copyTerm }}" data-text="{{ it.text }}" data-id="{{ it.id }}" style="{{ it.btnStyle }}">{{ it.btnLabel }}</button>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+    </sc-if>
+
+    <!-- JOB BOARDS -->
+    <sc-if value="{{ isBoards }}" hint-placeholder-val="{{ true }}">
+    <div style="max-width: 1080px; margin: 0 auto; padding: 26px 28px 60px;">
+      <p style="font-size: 14px; color: #6f6a60; margin: 0 0 24px; line-height: 1.55;">Boards beyond Indeed / LinkedIn / ZipRecruiter, grouped by lane. Verify postings before relying on them.</p>
+      <sc-for list="{{ boardGroups }}" as="g" hint-placeholder-count="5">
+        <div style="margin-bottom: 30px;">
+          <h3 style="font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 600; margin: 0 0 12px; letter-spacing: 0.02em; display: flex; align-items: center; gap: 10px;"><span style="width: 6px; height: 18px; border-radius: 3px; background: var(--accent);"></span>{{ g.title }}</h3>
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 10px;">
+            <sc-for list="{{ g.items }}" as="b" hint-placeholder-count="4">
+              <div style="background: #fffdf9; border: 1px solid #e4ded1; border-radius: 11px; padding: 14px 16px;">
+                <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 8px;">
+                  <span style="font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 14.5px;">{{ b.board }}</span>
+                  <a href="{{ b.href }}" target="_blank" rel="noopener" style="font-family: 'IBM Plex Mono', monospace; font-size: 11px;">{{ b.url }} ↗</a>
+                </div>
+                <div style="font-size: 12.5px; color: #55504a; margin-top: 6px; line-height: 1.45;">{{ b.bestFor }}</div>
+                <div style="font-size: 11.5px; color: #a39d90; margin-top: 8px; line-height: 1.45; border-top: 1px solid #efe9dc; padding-top: 8px;">{{ b.notes }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+    </sc-if>
+
+  </main>
+
+  <!-- DETAIL DRAWER -->
+  <sc-if value="{{ hasSelected }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ closeCard }}" style="position: fixed; inset: 0; background: rgba(30,26,20,0.32); z-index: 40; animation: fadeIn 0.15s ease;">
+    <div onClick="{{ stop }}" style="position: absolute; top: 0; right: 0; height: 100%; width: 420px; max-width: 92vw; background: #f7f3ec; box-shadow: -12px 0 40px rgba(40,30,15,0.18); overflow-y: auto; animation: slideIn 0.2s ease; display: flex; flex-direction: column;">
+      <div style="padding: 22px 24px; border-bottom: 1px solid #e4ded1; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
+        <div>
+          <div style="font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 21px; line-height: 1.15;">{{ sel.co }}</div>
+          <div style="font-size: 14px; color: #55504a; margin-top: 4px;">{{ sel.role }}</div>
+        </div>
+        <button onClick="{{ closeCard }}" style="background: #e6e0d4; border: none; width: 30px; height: 30px; border-radius: 8px; font-size: 16px; cursor: pointer; color: #55504a; flex-shrink: 0;">×</button>
+      </div>
+
+      <div style="padding: 20px 24px;">
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: #a39d90; margin-bottom: 10px;">Move to stage</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 24px;">
+          <sc-for list="{{ selStatuses }}" as="st" hint-placeholder-count="6">
+            <button onClick="{{ changeStatus }}" data-status="{{ st.key }}" style="{{ st.style }}">{{ st.label }}</button>
+          </sc-for>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 2px;">
+          <sc-for list="{{ selFields }}" as="f" hint-placeholder-count="6">
+            <div style="display: grid; grid-template-columns: 110px 1fr; gap: 12px; padding: 11px 0; border-top: 1px solid #eae4d7;">
+              <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: #a39d90; padding-top: 1px;">{{ f.label }}</span>
+              <span style="font-size: 13.5px; color: #33302b; line-height: 1.45;">{{ f.value }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#b0542f&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Appearance&quot;},&quot;startView&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;board&quot;,&quot;options&quot;:[&quot;board&quot;,&quot;table&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Behavior&quot;},&quot;hideClosed&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Behavior&quot;}}">
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { tab: 'pipeline', view: 'board', query: '', track: 'All', prio: 'All', overrides: {}, selected: null, copied: null };
+    this._drag = null;
+  }
+
+  componentDidMount() {
+    try {
+      const raw = localStorage.getItem('tsl-tracker-v1');
+      if (raw) this.setState({ overrides: JSON.parse(raw) });
+    } catch (e) {}
+    if (this.props.startView === 'table' || this.props.startView === 'board') {
+      this.setState({ view: this.props.startView });
+    }
+    this._applyAccent();
+  }
+  componentDidUpdate(prev) { if (prev.accent !== this.props.accent) this._applyAccent(); }
+  _applyAccent() {
+    const el = document.querySelector('[data-tracker]');
+    if (el && this.props.accent) el.style.setProperty('--accent', this.props.accent);
+  }
+
+  _save(ov) { try { localStorage.setItem('tsl-tracker-v1', JSON.stringify(ov)); } catch (e) {} }
+
+  STATUS_META() {
+    return [
+      { key: 'Ready to Apply', color: '#5b57d6', bg: '#eceafa' },
+      { key: 'In Progress',    color: '#b07000', bg: '#f8eeda' },
+      { key: 'Applied',        color: '#2f6bb0', bg: '#e6eef8' },
+      { key: 'Phone Screen',   color: '#1f8a6d', bg: '#e1f2ec' },
+      { key: 'Interviewing',   color: '#1f8a5b', bg: '#e1f2e8' },
+      { key: 'Offer',          color: '#9a7500', bg: '#f7efd6' },
+      { key: 'Hold',           color: '#6f6a60', bg: '#ede9e0' },
+      { key: 'Skip',           color: '#8a857b', bg: '#ece8df' },
+      { key: 'Rejected',       color: '#a8443a', bg: '#f5e5e1' },
+    ];
+  }
+  _statusMeta(k) { return this.STATUS_META().find(s => s.key === k) || { color: '#8a857b', bg: '#ece8df' }; }
+
+  PRIO_META() {
+    return {
+      'Very High': '#b0542f', 'High': '#cf8a3a', 'Medium': '#9a9488', 'Low': '#c3bdb0', '': '#d8d2c5',
+    };
+  }
+
+  ROLES() {
+    // [co, role, src, loc, type, sal, track, status, prio, contact, next]
+    const raw = [
+      ['Affinity Group','Key Account Specialist (Food Broker)','JazzHR / Company site','Raleigh, NC','Remote field','Competitive + bonus','Foodservice Sales','Phone Screen','Very High','Johnny','Prepare for phone screen'],
+      ['Aramark','General Manager, Retail Dining — Duke Hospital','Company site','Durham, NC','Onsite','','','Applied','Medium','',''],
+      ['Cheney Brothers','District Sales Representative','Company site','North Carolina','Field sales','','','Applied','High','',''],
+      ['CLEAR','General Manager, Future Openings','Company site','All US / airport locations','Airport operations','Base + target bonus','Aviation / Airport Operations','Hold','High','',''],
+      ['Club at 12 Oaks','Food and Beverage Director','Company site','Holly Springs, NC','Onsite','','','Applied','High','',''],
+      ['Constellation Brands','Senior Market Development Manager','Company site','North Carolina','Field / Hybrid','','','Applied','High','',''],
+      ['Cornerstone Caregiving','Director, Business Development & Operations','Company site','Raleigh / Durham','Field / Hybrid','','','Skip','Medium','',''],
+      ['Crawford Hospitality','GM / F&B (any)','Company site','Raleigh, NC','Onsite','$70K–$120K','F&B Director / GM','Applied','High','',''],
+      ['Durham Bulls / Capitol Broadcasting','Baseball Account Executive','LinkedIn / Company site','Durham, NC','Onsite / Events','','','Hold','Low','',''],
+      ['East of Texas','General Manager','Company site','North Carolina','Onsite','','','Applied','Medium','',''],
+      ['Eurofins','Territory Sales Rep / Account Manager','Company site','Raleigh / Region','Field sales','','','In Progress','High','',''],
+      ['FreshPoint / Sysco','Buyer','Company site','Morrisville, NC','Onsite','Target $78K–$84K','Procurement / Supply Chain','Applied','Very High','','Watch for response'],
+      ['Gilde Brewery','Sales Representative','Company site','North Carolina','Field sales','','','Applied','Medium','',''],
+      ['Giorgios Hospitality Group','General Manager','Company site','Raleigh / Durham','Onsite','','','Applied','Medium','',''],
+      ['Grapevine Distributing','Sales Representative','Company site','North Carolina','Field sales','','','Applied','Medium','',''],
+      ['Grove Collaborative','Inventory Planner','Company site','Remote','Remote','$75K–$90K','Procurement / Supply Chain','Applied','Very High','',''],
+      ['Hotaling & Co.','Business Development Manager','Company site','North Carolina','Field sales','','','Applied','High','',''],
+      ['Idahoan Foods','National Account Manager, Non-Commercial','Company site','Remote','Remote','$140K–$175K + bonus','Foodservice Sales','Rejected','High','',''],
+      ['Italian ingredient manufacturer','Sales Manager, Southeast','LinkedIn','Concord, NC + Southeast','Hybrid / 60% travel','Base + ~$30K KPI bonus','Foodservice Sales','Skip','Low','',''],
+      ['Johnson Brothers','Sales Training Manager','Company site','North Carolina','Field / Hybrid','','','Applied','High','',''],
+      ['Johnson Brothers','On-Premise Spirits District Manager','Company site','North Carolina','Field sales','','','Applied','High','',''],
+      ['MaintainX','Customer Success Manager','Company site','Raleigh, NC','Hybrid','Target $95K','Remote Hospitality SaaS / Tech','Applied','High','',''],
+      ['NC State Dining','Assistant Director','Company site','Raleigh, NC','Onsite','','','Applied','Medium','',''],
+      ['Nextaff','Business Development & Partnerships Manager','Company site','Raleigh / Durham','Hybrid / Field','','','Applied','Medium','',''],
+      ['North Carolina Courage','Merchandise Manager','Company site','Cary, NC','Onsite / Event','Est. $78K–$88K','Procurement / Supply Chain','Skip','Medium','',''],
+      ['Novonesis','National Account Manager, East Territory','Company site','Remote','Remote','$125K–$145K','Foodservice Sales','Applied','High','',''],
+      ['Oak Steakhouse Raleigh (Indigo Road)','GM / Beverage Director','Networking','Raleigh, NC','Onsite','','','Hold','Medium','Nicholas Papas',''],
+      ['Paycom','Strategic Account Manager','Company site','Raleigh, NC','Field / Hybrid','','','Rejected','Medium','',''],
+      ['Piper Companies','Operations Manager','Company site','Durham, NC','Hybrid','Target $95K','Operations / Business Development','Applied','High','',''],
+      ['Prestonwood Country Club','Assistant Manager (Red Fox)','Direct application','Cary, NC','Onsite','','','Applied','Low','',''],
+      ['Proof Wine & Spirits','Wine Sales Representative','Company site','North Carolina','Field sales','','','Applied','High','',''],
+      ['Raleigh Marriott City Center','Catering Sales Manager','Company site','Raleigh, NC','Onsite','','','Applied','Medium','',''],
+      ['Restaurant365','Account Executive','LinkedIn / Company site','Remote','Remote','$90K–$120K','Remote Hospitality SaaS / Tech','Ready to Apply','Medium','',''],
+      ['Rewards Network','Sales Account Executive','Company site','Raleigh / Durham','Field sales','','','Rejected','Medium','',''],
+      ['SevenRooms','Account Development Executive','LinkedIn / Company site','Remote','Remote','$90K–$120K','Remote Hospitality SaaS / Tech','Ready to Apply','Medium','',''],
+      ['Sodexo Live','Director of Catering Sales — Raleigh Convention Center','Company site','Raleigh, NC','Onsite','','','Rejected','High','',''],
+      ['Swissport','Strategic Procurement Manager','Company site','Raleigh, NC','Hybrid','$110K–$113K','Procurement / Supply Chain','Applied','Very High','','Watch for response'],
+      ['Swissport','HQA Billing Analyst','Company site','Raleigh, NC','Onsite','$50K–$64K','Aviation / Airport Operations','Skip','Low','',''],
+      ["The Chefs' Warehouse",'Sales Associate','Company site / Dayforce','Raleigh, NC','Field sales','$60K–$100K + commission','Foodservice Sales','Applied','High','','Watch for response'],
+      ['The Durham Hotel','Director of Food & Beverage','Company site','Durham, NC','Onsite','','','Applied','High','',''],
+      ['The Fresh Market','Co-Store Director','LinkedIn / Company site','Raleigh / Durham area','Onsite','$75K–$90K','F&B Director / GM','Skip','Low','',''],
+      ['Thermo Fisher Scientific','Marketing Meetings & Events Specialist','Company site','RTP / Raleigh','Hybrid','','','Applied','Medium','',''],
+      ['Total Wine','Assistant Store Manager, Sales','Company site','Raleigh / Durham area','Onsite','Up to ~$70K','F&B Director / GM','Applied','Low','',''],
+      ['Uline','Territory Sales Manager','Company site','Raleigh, NC','Field sales','','','Rejected','Medium','',''],
+      ['Varonis','Procurement Buyer','Company site','Raleigh / Remote','—','','','Applied','High','',''],
+      ['ViiV / GSK','Sales Performance & Incentive Manager','Company site','Raleigh / RTP','Hybrid','','','Applied','Medium','',''],
+      ['White Lodging','Sales Manager','Company site','Raleigh, NC','Onsite / Hybrid','','','Applied','Medium','',''],
+      ['Oak View Group','GM / AGM','Company site','Durham, NC','Onsite','$80K–$110K','F&B Director / GM','Applied','High','',''],
+      ['Looma','Role TBD','—','—','—','','','Ready to Apply','','',''],
+      ['Nanasteak','FOH / Management','Company site','Durham, NC','Onsite','','','Ready to Apply','','',''],
+      ['Osteria','FOH / Management','Company site','Durham, NC','Onsite','','','Ready to Apply','','',''],
+      ['Bluebird','Server','ZipRecruiter','Chapel Hill, NC','Onsite','','','Ready to Apply','','',''],
+      ['Rocket Farm','GM / AGM','Company site','Raleigh, NC','Onsite','$70K–$120K','F&B Director / GM','Applied','High','',''],
+      ['Sixty Vines','Restaurant Manager','Company site','Raleigh, NC','Onsite','Up to $75K','F&B Director / GM','Ready to Apply','Medium','',''],
+      ['Nanas','Server','Indeed','Durham, NC','Onsite','','','Ready to Apply','','',''],
+    ];
+    return raw.map((r, i) => ({
+      id: 'r' + i, co: r[0], role: r[1], src: r[2], loc: r[3], type: r[4],
+      sal: r[5], track: r[6], baseStatus: r[7], prio: r[8], contact: r[9], next: r[10],
+    }));
+  }
+
+  _statusOf(role) { return this.state.overrides[role.id] || role.baseStatus; }
+
+  _filtered() {
+    const q = this.state.query.trim().toLowerCase();
+    return this.ROLES().filter(r => {
+      if (this.state.track !== 'All') {
+        const t = r.track || 'Unassigned';
+        if (t !== this.state.track) return false;
+      }
+      if (this.state.prio !== 'All' && r.prio !== this.state.prio) return false;
+      if (q) {
+        const hay = (r.co + ' ' + r.role + ' ' + r.loc + ' ' + r.track).toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }
+
+  TERM_GROUPS() {
+    return [
+      { title: 'Hospitality Leadership (F&B Director / GM / Beverage Director)', items: [
+        '("Food and Beverage Director" OR "F&B Director" OR "Director of Food and Beverage") AND (steakhouse OR "fine dining" OR "luxury hospitality")',
+        '("General Manager" OR "Restaurant General Manager" OR "GM") AND (restaurant OR steakhouse OR "fine dining") NOT "QSR"',
+        '("Beverage Director" OR "Wine Director" OR "Director of Wine") AND (restaurant OR hospitality OR hotel)',
+        '("Assistant General Manager" OR "AGM") AND (restaurant OR "country club" OR "private club") AND (Raleigh OR Durham OR "Chapel Hill" OR Triangle)',
+        '("Restaurant Manager" OR "Operations Manager") AND ("fine dining" OR upscale OR luxury) AND (NC OR "North Carolina")',
+      ]},
+      { title: 'Wine & Spirits Distribution / Beverage Sales', items: [
+        '("District Sales Manager" OR "Territory Manager" OR "Key Account Manager") AND (wine OR spirits OR "beverage alcohol")',
+        '("Sales Representative" OR "Account Executive") AND (wine OR spirits OR distributor) AND (Carolinas OR "North Carolina" OR NC)',
+        '("Market Development Manager" OR "Brand Ambassador" OR "Portfolio Manager") AND (wine OR spirits OR beverage)',
+        '(sommelier OR "wine director" OR "beverage manager") AND ("on premise" OR "on-premise" account management)',
+      ]},
+      { title: 'Remote Hospitality SaaS / Tech Sales', items: [
+        '("Account Executive" OR "Customer Success Manager" OR "Implementation Manager") AND (restaurant OR hospitality) AND (SaaS OR software) AND remote',
+        '("Sales Development Representative" OR "Account Manager") AND ("restaurant technology" OR "hospitality technology" OR "POS")',
+        '(restaurant OR hospitality) AND (SaaS OR platform) AND ("Account Executive" OR "Regional Sales Manager") AND remote',
+      ]},
+      { title: 'Aviation / Ops-Adjacent Management', items: [
+        '("Operations Manager" OR "General Manager" OR "Station Manager") AND (aviation OR airport OR FBO OR "fixed base operator")',
+        '("Customer Service Manager" OR "Ground Operations Manager") AND (airline OR airport OR aviation)',
+        '("General Manager" OR "Director of Operations") AND ("private aviation" OR "business aviation" OR charter)',
+      ]},
+      { title: 'General Management (cross-industry)', items: [
+        '("General Manager" OR "Operations Director" OR "Director of Operations") AND (hospitality OR luxury OR "guest experience")',
+        '("Regional Manager" OR "Multi-Unit Manager") AND (restaurant OR hospitality OR retail) NOT franchise',
+      ]},
+      { title: 'Procurement / Supply Chain', items: [
+        '("Strategic Procurement" OR "Procurement Manager" OR "Sourcing Manager") AND (Raleigh OR Durham OR "Research Triangle")',
+        '("Buyer" OR "Purchasing Manager" OR "Category Manager") AND (foodservice OR hospitality OR aviation OR airport)',
+        '("Inventory Planner" OR "Demand Planner" OR "Supply Planner") AND (food OR beverage OR CPG OR ecommerce)',
+        '("Vendor Manager" OR "Supplier Manager" OR "Contracts Manager") AND (procurement OR sourcing OR supply)',
+      ]},
+      { title: 'Aviation, Airport & RDU-Adjacent', items: [
+        '("Airport Operations" OR "Airport Manager" OR "Station Manager") AND (RDU OR Raleigh OR Durham OR Morrisville)',
+        '("Commercial Manager" OR "Concessions Manager" OR "Revenue Manager") AND (airport OR aviation)',
+        '("Procurement" OR "Contracts" OR "Supply Chain") AND (airport OR aviation OR airline OR "ground handling")',
+        '("General Manager" OR "Operations Manager") AND (CLEAR OR Swissport OR "Signature Aviation" OR "Atlantic Aviation")',
+      ]},
+      { title: 'Foodservice Sales & Account Management', items: [
+        '("Foodservice Sales" OR "Food Broker" OR "Key Account Specialist") AND (Raleigh OR Durham OR "North Carolina")',
+        '("Territory Sales" OR "Account Manager") AND (restaurant OR culinary OR foodservice) AND (Raleigh OR Durham)',
+        '("Wine Sales" OR "Spirits" OR "On Premise") AND ("North Carolina" OR Raleigh OR Durham)',
+      ]},
+    ];
+  }
+
+  BOARD_GROUPS() {
+    return [
+      { title: 'Hospitality / Restaurant — General', items: [
+        ['Hcareers','hcareers.com','Hotel ops, F&B management, revenue management','20+ years in the space; strong for salaried hotel/restaurant management roles'],
+        ['Hospitality Online','hospitalityonline.com','Hotels, restaurants, casinos','Company profiles let you vet culture before applying'],
+        ['iHireHospitality','ihirehospitality.com','Hospitality professionals broadly','Resume-matching, career-advice content'],
+        ['Culinary Agents','culinaryagents.com','F&B, beverage & service roles incl. sommeliers/managers','2M+ member community; paid posting means fewer low-effort applicants'],
+        ['Poached Jobs','poachedjobs.com','Restaurant/bar roles, strongest West Coast/PNW','Good secondary channel, mobile-first'],
+        ['OysterLink','oysterlink.com','Restaurant-only, fast-moving markets (NYC, Miami)','Newer, restaurant-only focus'],
+        ['HospitalityCrossing','hospitalitycrossing.com','Broad reach via EmploymentCrossing network','Free posting tier exists; large resume database'],
+        ['eHotelier Careers','ehotelier.com/careers','Hotel management, international','Good if open to hotel-side GM/ops roles'],
+        ['BevNET / Beverage Careers','bevnet.com/jobs','Beverage/alcohol brand roles','Broader than wine — spirits, beer, non-alc too'],
+      ]},
+      { title: 'Wine & Beverage', items: [
+        ['Winejobs.com','winejobs.com','Winery, distribution, on-premise wine sales','Industry-leading; 10,000+ postings/year, includes a comp/salary tracker'],
+        ['Wine Jobs USA','winejobsusa.com','Wine + hospitality crossover roles','Run by a Master of Wine; smaller but curated'],
+        ['Wine Industry Careers','wineindustrycareers.com','Winery/vineyard/tasting room, some corporate','Posts salary ranges on most listings'],
+        ['BevForce','bevforce.com','Beverage-alcohol recruiting + job board','Also does executive search — worth a direct outreach'],
+        ['SevenFifty Jobs','sevenfifty.com/jobs','Distributor/importer/on-premise buyer roles','Tied to the SevenFifty B2B marketplace used by distributors'],
+        ['GuildSomm','guildsomm.com','Sommelier & beverage director roles','Best for credential-adjacent postings given your CMS track'],
+      ]},
+      { title: 'Aviation', items: [
+        ['JSfirm.com','jsfirm.com','Aviation management, ops, sales, executive','Largest general-aviation board; free resume posting; dedicated management category'],
+        ['Avjobs.com','avjobs.com','Airlines, airports, manufacturers, ground ops','Broad coverage; good if open to airport/ops-adjacent management'],
+        ['Aviation Job Search','aviationjobsearch.com','Global airline/MRO/operator roles incl. management','Strong if open to relocation/international'],
+        ['NBAA Career Center','jobs.nbaa.org','Business/private aviation incl. FBO & ops management','Private aviation trends hospitality-adjacent — a fit for your background'],
+        ['Climbto350.com','climbto350.com','Airline hiring intel + listings','Useful more for market intel than management roles'],
+      ]},
+      { title: 'Sales (general + hospitality-adjacent)', items: [
+        ['Rep Hunter','rephunter.net','B2B & manufacturer sales reps','Includes food/beverage/hospitality-adjacent sales roles'],
+        ['Sales Gravy Jobs','salesgravyjobs.com','B2B sales roles across industries','Good for SaaS/tech sales cross-search'],
+        ['HFTP Career Center','hftp.org','Hospitality finance, technology & ops leadership','Niche but well-matched to a tech-plus-hospitality profile'],
+      ]},
+      { title: 'Executive / Retained Search (GM, Director, F&B Director level)', items: [
+        ['Gecko Hospitality','geckohospitality.com','Restaurant GM / F&B Director placements','Regional recruiters, often unlisted client roles — worth a direct call'],
+        ['Goodwin Recruiting','goodwinrecruiting.com','Hospitality management search','Candidate-friendly, no cost to job seekers'],
+        ['AETHOS Consulting Group','aethosconsulting.com','Senior hospitality/travel executive search','More hotel-executive skewed but worth being on their radar'],
+        ['BlueSteps','bluesteps.com','Executive-level hospitality & travel careers','Membership-based; positions you for retained-search visibility'],
+      ]},
+    ];
+  }
+
+  // ---- handlers ----
+  setTab = (e) => this.setState({ tab: e.currentTarget.dataset.tab });
+  setView = (e) => this.setState({ view: e.currentTarget.dataset.view });
+  setQuery = (e) => this.setState({ query: e.target.value });
+  setTrack = (e) => this.setState({ track: e.currentTarget.dataset.track });
+  setPriority = (e) => this.setState({ prio: e.currentTarget.dataset.prio });
+  openCard = (e) => this.setState({ selected: e.currentTarget.dataset.id });
+  closeCard = () => this.setState({ selected: null });
+  stop = (e) => e.stopPropagation();
+  onDragStart = (e) => { this._drag = e.currentTarget.dataset.id; e.dataTransfer.effectAllowed = 'move'; e.currentTarget.style.opacity = '0.4'; };
+  onDragEnd = (e) => { e.currentTarget.style.opacity = '1'; };
+  onDragOver = (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; };
+  onDrop = (e) => {
+    e.preventDefault();
+    const status = e.currentTarget.dataset.status;
+    if (!this._drag) return;
+    const ov = Object.assign({}, this.state.overrides, { [this._drag]: status });
+    this._drag = null;
+    this.setState({ overrides: ov });
+    this._save(ov);
+  };
+  changeStatus = (e) => {
+    const status = e.currentTarget.dataset.status;
+    if (!this.state.selected) return;
+    const ov = Object.assign({}, this.state.overrides, { [this.state.selected]: status });
+    this.setState({ overrides: ov });
+    this._save(ov);
+  };
+  copyTerm = (e) => {
+    const text = e.currentTarget.dataset.text;
+    const id = e.currentTarget.dataset.id;
+    try { navigator.clipboard.writeText(text); } catch (err) {}
+    this.setState({ copied: id });
+    clearTimeout(this._ct);
+    this._ct = setTimeout(() => this.setState({ copied: null }), 1400);
+  };
+
+  // ---- style helpers ----
+  _tabStyle(active) {
+    return 'font-family: \'IBM Plex Sans\', sans-serif; font-size: 14px; font-weight: 600; padding: 10px 16px; border: none; background: none; cursor: pointer; border-bottom: 2.5px solid ' + (active ? 'var(--accent)' : 'transparent') + '; color: ' + (active ? '#211f1b' : '#8a857b') + '; margin-bottom: -1px;';
+  }
+  _segStyle(active) {
+    return 'font-family: \'IBM Plex Sans\', sans-serif; font-size: 13px; font-weight: 600; padding: 6px 16px; border: none; border-radius: 8px; cursor: pointer; background: ' + (active ? '#fffdf9' : 'transparent') + '; color: ' + (active ? '#211f1b' : '#7a756b') + '; box-shadow: ' + (active ? '0 1px 2px rgba(60,50,30,0.08)' : 'none') + ';';
+  }
+  _chipStyle(active) {
+    return 'font-family: \'IBM Plex Sans\', sans-serif; font-size: 12.5px; font-weight: 500; padding: 6px 12px; border-radius: 20px; cursor: pointer; border: 1px solid ' + (active ? 'var(--accent)' : '#ddd6c9') + '; background: ' + (active ? 'var(--accent)' : '#fffdf9') + '; color: ' + (active ? '#fff' : '#55504a') + ';';
+  }
+
+  renderVals() {
+    const meta = this.STATUS_META();
+    const prioColors = this.PRIO_META();
+    const all = this.ROLES();
+    const filtered = this._filtered();
+
+    // stats (from full set, live via overrides)
+    const countBy = (k) => all.filter(r => this._statusOf(r) === k).length;
+    const active = countBy('Ready to Apply') + countBy('In Progress') + countBy('Applied') + countBy('Phone Screen') + countBy('Interviewing') + countBy('Offer');
+    const responses = countBy('Phone Screen') + countBy('Interviewing') + countBy('Offer');
+    const stats = [
+      { label: 'Total Roles', value: all.length, color: '#211f1b' },
+      { label: 'Active', value: active, color: '#2f6bb0' },
+      { label: 'Applied', value: countBy('Applied'), color: '#2f6bb0' },
+      { label: 'In Conversation', value: responses, color: '#1f8a6d' },
+      { label: 'Closed Out', value: countBy('Rejected') + countBy('Skip'), color: '#a8443a' },
+    ];
+
+    const queue = [
+      { co: 'Affinity Group', action: 'Prepare for phone screen' },
+      { co: 'Swissport — Procurement', action: 'Watch for response' },
+      { co: "The Chefs' Warehouse", action: 'Watch for response' },
+      { co: 'FreshPoint — Buyer', action: 'Watch for response' },
+    ];
+
+    // track chips
+    const trackSet = [];
+    all.forEach(r => { const t = r.track || 'Unassigned'; if (!trackSet.includes(t)) trackSet.push(t); });
+    trackSet.sort();
+    const trackChips = [{ key: 'All', label: 'All Tracks' }].concat(trackSet.map(t => ({ key: t, label: t }))).map(c => ({ key: c.key, label: c.label, style: this._chipStyle(this.state.track === c.key) }));
+
+    const prios = ['All', 'Very High', 'High', 'Medium', 'Low'];
+    const prioChips = prios.map(p => ({ key: p, label: p, style: this._chipStyle(this.state.prio === p) }));
+
+    // columns
+    let colKeys = meta.map(m => m.key);
+    if (this.props.hideClosed) colKeys = colKeys.filter(k => k !== 'Skip' && k !== 'Rejected');
+    const columns = colKeys.map(k => {
+      const m = this._statusMeta(k);
+      const cards = filtered.filter(r => this._statusOf(r) === k).map(r => ({
+        id: r.id, co: r.co, role: r.role, loc: r.loc,
+        track: r.track, hasTrack: !!r.track,
+        sal: r.sal, hasSal: !!r.sal,
+        prioColor: prioColors[r.prio] || prioColors[''],
+      }));
+      return { key: k, label: k, color: m.color, count: cards.length, cards };
+    });
+
+    // table
+    const tableRows = filtered.slice().sort((a, b) => a.co.localeCompare(b.co)).map(r => {
+      const st = this._statusOf(r);
+      const m = this._statusMeta(st);
+      return {
+        id: r.id, co: r.co, role: r.role, track: r.track || 'Unassigned',
+        status: st, statusColor: m.color, statusBg: m.bg,
+        prio: r.prio || '—', prioColor: prioColors[r.prio] || prioColors[''],
+        loc: r.loc, sal: r.sal || '—',
+      };
+    });
+
+    // terms
+    const termGroups = this.TERM_GROUPS().map((g, gi) => ({
+      title: g.title,
+      items: g.items.map((t, ii) => {
+        const id = 'g' + gi + 'i' + ii;
+        const isCopied = this.state.copied === id;
+        return {
+          id, text: t, btnLabel: isCopied ? 'Copied ✓' : 'Copy',
+          btnStyle: 'flex-shrink: 0; font-family: \'IBM Plex Sans\', sans-serif; font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 8px; border: 1px solid ' + (isCopied ? '#1f8a6d' : '#ddd6c9') + '; background: ' + (isCopied ? '#e1f2ec' : '#f2ede3') + '; color: ' + (isCopied ? '#1f8a6d' : '#55504a') + '; cursor: pointer;',
+        };
+      }),
+    }));
+
+    // boards
+    const boardGroups = this.BOARD_GROUPS().map(g => ({
+      title: g.title,
+      items: g.items.map(b => ({
+        board: b[0], url: b[1], href: b[1].startsWith('http') ? b[1] : 'https://' + b[1].split(' ')[0],
+        bestFor: b[2], notes: b[3],
+      })),
+    }));
+
+    // selected detail
+    const selRole = this.state.selected ? all.find(r => r.id === this.state.selected) : null;
+    let sel = null, selStatuses = [], selFields = [];
+    if (selRole) {
+      const cur = this._statusOf(selRole);
+      sel = { co: selRole.co, role: selRole.role };
+      selStatuses = meta.map(m => ({
+        key: m.key, label: m.key,
+        style: 'font-family: \'IBM Plex Sans\', sans-serif; font-size: 12px; font-weight: 600; padding: 6px 11px; border-radius: 8px; cursor: pointer; border: 1px solid ' + (cur === m.key ? m.color : '#e0dacd') + '; background: ' + (cur === m.key ? m.bg : '#fffdf9') + '; color: ' + (cur === m.key ? m.color : '#8a857b') + ';',
+      }));
+      const f = [];
+      f.push({ label: 'Track', value: selRole.track || 'Unassigned' });
+      f.push({ label: 'Priority', value: selRole.prio || '—' });
+      f.push({ label: 'Location', value: selRole.loc || '—' });
+      if (selRole.type && selRole.type !== '—') f.push({ label: 'Work Type', value: selRole.type });
+      if (selRole.sal) f.push({ label: 'Salary', value: selRole.sal });
+      if (selRole.src && selRole.src !== '—') f.push({ label: 'Source', value: selRole.src });
+      if (selRole.contact) f.push({ label: 'Contact', value: selRole.contact });
+      if (selRole.next) f.push({ label: 'Next Action', value: selRole.next });
+      selFields = f;
+    }
+
+    return {
+      total: all.length,
+      isPipeline: this.state.tab === 'pipeline',
+      isTerms: this.state.tab === 'terms',
+      isBoards: this.state.tab === 'boards',
+      isBoard: this.state.view === 'board',
+      isTable: this.state.view === 'table',
+      tabStylePipeline: this._tabStyle(this.state.tab === 'pipeline'),
+      tabStyleTerms: this._tabStyle(this.state.tab === 'terms'),
+      tabStyleBoards: this._tabStyle(this.state.tab === 'boards'),
+      viewStyleBoard: this._segStyle(this.state.view === 'board'),
+      viewStyleTable: this._segStyle(this.state.view === 'table'),
+      query: this.state.query,
+      stats, queue, trackChips, prioChips, columns, tableRows, termGroups, boardGroups,
+      hasSelected: !!selRole, sel, selStatuses, selFields,
+      setTab: this.setTab, setView: this.setView, setQuery: this.setQuery,
+      setTrack: this.setTrack, setPriority: this.setPriority,
+      openCard: this.openCard, closeCard: this.closeCard, stop: this.stop,
+      onDragStart: this.onDragStart, onDragEnd: this.onDragEnd, onDragOver: this.onDragOver, onDrop: this.onDrop,
+      changeStatus: this.changeStatus, copyTerm: this.copyTerm,
+    };
+  }
+}
+</script>
+</body>
+</html>
