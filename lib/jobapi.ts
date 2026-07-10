@@ -26,7 +26,9 @@ export function activeProvider(): Provider {
   return 'sample';
 }
 
-const DEFAULT_LOCATION = process.env.JOB_SEARCH_LOCATION || 'Raleigh, North Carolina';
+// Centered on Durham so a single ~30mi radius reaches the whole Triangle —
+// Hillsborough, Chapel Hill, Creedmoor, RTP, Morrisville, Cary, and Raleigh.
+const DEFAULT_LOCATION = process.env.JOB_SEARCH_LOCATION || 'Durham, North Carolina';
 
 /**
  * Aggregator APIs don't accept raw LinkedIn boolean strings well. We distill a boolean
@@ -48,13 +50,16 @@ function dedupe(listings: Listing[]): Listing[] {
   });
 }
 
-// Fast-food/QSR brands + junior-role words to exclude. Single tokens only
-// (Adzuna treats what_exclude as space-separated terms, not phrases). Avoid
-// generic words like "food"/"server" that appear in legitimate senior postings.
+// Fast-food/QSR signals to exclude. Single tokens only (Adzuna treats
+// what_exclude as space-separated terms, not phrases). Kept narrow on purpose:
+// what_exclude scans the full posting, so broad words like "crew"/"driver"/
+// "warehouse"/"busser" would wrongly drop legit senior roles (a sales JD saying
+// "driver of growth", a restaurant JD listing "bussers", an aviation ground-crew
+// role, a procurement JD mentioning "warehouse"). Brands + qsr/franchise are the
+// low-false-positive way to filter fast food.
 const EXCLUDE_TERMS = [
-  'nurse', 'rn', 'cna', 'caregiver', 'driver', 'warehouse',
-  'cashier', 'dishwasher', 'busser', 'barista', 'crew', 'qsr', 'franchise', 'hostess',
-  'mcdonalds', 'wendys', 'chipotle', 'dominos', 'popeyes', 'sonic', 'hardees',
+  'nurse', 'rn', 'cna', 'caregiver', 'qsr', 'franchise',
+  'mcdonalds', 'wendys', 'chipotle', 'dominos', 'popeyes', 'hardees',
   'subway', 'kfc', 'arbys', 'zaxbys', 'bojangles', 'cookout',
 ].join(' ');
 

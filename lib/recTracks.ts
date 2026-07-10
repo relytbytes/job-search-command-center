@@ -37,9 +37,8 @@ export const REC_TRACKS: RecTrack[] = [
     phrases: ['key account manager', 'business development manager'],
   },
   {
-    track: 'Remote Hospitality Tech Sales',
+    track: 'Hospitality Tech Sales',
     phrases: ['restaurant account executive', 'hospitality account executive'],
-    where: null,
   },
   {
     track: 'Procurement / Purchasing / Inventory',
@@ -51,13 +50,12 @@ export const REC_TRACKS: RecTrack[] = [
     track: 'Operations & General Management',
     phrases: ['operations manager', 'operations director'],
   },
-  // Aviation — run NATIONWIDE (where: null): there are almost no aviation-management
-  // titles within 30mi of Raleigh, so a local search returns nothing. A stretch lane
-  // (Associate in Aviation Management, no aviation work history); may mean relocation.
+  // Aviation — LOCAL (RDU is in Morrisville, inside the search radius) and
+  // entry-level: Tyler wants a foot in the door, not aviation management. These
+  // titles catch ramp/gate/ground and anything titled "airport"/"aviation".
   {
-    track: 'Aviation & Airport Operations',
-    phrases: ['airport operations', 'aviation manager'],
-    where: null,
+    track: 'Aviation (foot in the door)',
+    phrases: ['ramp agent', 'gate agent', 'airport', 'aviation'],
   },
 ];
 
