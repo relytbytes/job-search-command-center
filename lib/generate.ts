@@ -1,19 +1,35 @@
 import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 import type { Role } from './types';
 import { candidateProfile, CANDIDATE_NAME } from './resume';
 
-/** Anthropic is configured when an API key is present. */
+/**
+ * The writing assistant works with EITHER an OpenAI or an Anthropic key —
+ * whichever is configured. If both are set, OpenAI is preferred (set
+ * GEN_PROVIDER to force one).
+ */
+type Provider = 'openai' | 'anthropic';
+
+export function activeProvider(): Provider | null {
+  const forced = (process.env.GEN_PROVIDER || '').toLowerCase();
+  if (forced === 'openai' && process.env.OPENAI_API_KEY) return 'openai';
+  if (forced === 'anthropic' && process.env.ANTHROPIC_API_KEY) return 'anthropic';
+  if (process.env.OPENAI_API_KEY) return 'openai';
+  if (process.env.ANTHROPIC_API_KEY) return 'anthropic';
+  return null;
+}
+
 export function generatorConfigured(): boolean {
-  return Boolean(process.env.ANTHROPIC_API_KEY);
+  return activeProvider() !== null;
 }
 
-const MODEL = process.env.ANTHROPIC_MODEL || 'claude-opus-4-8';
+const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o';
+const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-opus-4-8';
 
-let _client: Anthropic | null = null;
-function client(): Anthropic {
-  if (!_client) _client = new Anthropic(); // reads ANTHROPIC_API_KEY from env
-  return _client;
-}
+let _openai: OpenAI | null = null;
+let _anthropic: Anthropic | null = null;
+const openai = () => (_openai ??= new OpenAI()); // reads OPENAI_API_KEY
+const anthropic = () => (_anthropic ??= new Anthropic()); // reads ANTHROPIC_API_KEY
 
 export type GenKind = 'cover' | 'followup';
 
@@ -81,16 +97,34 @@ ${candidateProfile()}`;
 
 export async function generate(kind: GenKind, role: Role, extra?: string): Promise<string> {
   const prompt = kind === 'cover' ? coverPrompt(role, extra) : followupPrompt(role, extra);
-  const res = await client().messages.create({
-    model: MODEL,
-    max_tokens: 1600,
-    system: SYSTEM,
-    thinking: { type: 'adaptive' },
-    messages: [{ role: 'user', content: prompt }],
-  });
-  return res.content
-    .filter((b): b is Anthropic.TextBlock => b.type === 'text')
-    .map((b) => b.text)
-    .join('')
-    .trim();
+  const provider = activeProvider();
+
+  if (provider === 'openai') {
+    const res = await openai().chat.completions.create({
+      model: OPENAI_MODEL,
+      max_tokens: 1600,
+      messages: [
+        { role: 'system', content: SYSTEM },
+        { role: 'user', content: prompt },
+      ],
+    });
+    return (res.choices[0]?.message?.content || '').trim();
+  }
+
+  if (provider === 'anthropic') {
+    const res = await anthropic().messages.create({
+      model: ANTHROPIC_MODEL,
+      max_tokens: 1600,
+      system: SYSTEM,
+      thinking: { type: 'adaptive' },
+      messages: [{ role: 'user', content: prompt }],
+    });
+    return res.content
+      .filter((b): b is Anthropic.TextBlock => b.type === 'text')
+      .map((b) => b.text)
+      .join('')
+      .trim();
+  }
+
+  throw new Error('No writing-assistant API key configured (set OPENAI_API_KEY or ANTHROPIC_API_KEY).');
 }

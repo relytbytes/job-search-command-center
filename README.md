@@ -77,12 +77,18 @@ licensed to index those postings, which is the compliant way to surface the same
 
 ## 3. Enable the writing assistant (cover letters + follow-ups)
 
-Add an **Anthropic API key** so the "Application Assistant" in each role's drawer can draft cover
-letters and follow-up emails, tailored to the role and grounded in your resume:
+Add **either an OpenAI or an Anthropic key** so the "Application Assistant" in each role's drawer can
+draft cover letters and follow-up emails, tailored to the role and grounded in your resume. It
+auto-detects whichever key is set (if both, OpenAI wins — override with `GEN_PROVIDER`):
 
 ```
+# Option A — OpenAI
+OPENAI_API_KEY=sk-...               # from https://platform.openai.com/api-keys
+OPENAI_MODEL=gpt-4o                 # optional (default)
+
+# Option B — Anthropic
 ANTHROPIC_API_KEY=sk-ant-...        # from https://console.anthropic.com/
-ANTHROPIC_MODEL=claude-opus-4-8     # optional (this is the default)
+ANTHROPIC_MODEL=claude-opus-4-8     # optional (default)
 ```
 
 Your resume content lives in `lib/resume.ts` (professional history only — no phone/personal email,

@@ -8,7 +8,7 @@ export const maxDuration = 60; // cover-letter generation can take a while
 export async function POST(req: NextRequest) {
   if (!generatorConfigured()) {
     return NextResponse.json(
-      { error: 'The writing assistant is not configured. Set ANTHROPIC_API_KEY to enable it.' },
+      { error: 'The writing assistant is not configured. Set OPENAI_API_KEY (or ANTHROPIC_API_KEY) to enable it.' },
       { status: 501 },
     );
   }
