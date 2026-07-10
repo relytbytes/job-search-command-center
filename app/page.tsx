@@ -1305,6 +1305,9 @@ function DrawerAssistant({ role }: { role: Role }) {
   const [text, setText] = useState('');
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
+  const [docUrl, setDocUrl] = useState('');
+  const [docSaving, setDocSaving] = useState(false);
+  const [docErr, setDocErr] = useState('');
 
   async function run(k: GenKind) {
     setKind(k);
@@ -1312,6 +1315,8 @@ function DrawerAssistant({ role }: { role: Role }) {
     setError('');
     setText('');
     setCopied(false);
+    setDocUrl('');
+    setDocErr('');
     try {
       const res = await fetch('/api/generate', {
         method: 'POST',
@@ -1325,6 +1330,26 @@ function DrawerAssistant({ role }: { role: Role }) {
       setError(e?.message || 'Generation failed');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function saveDoc() {
+    setDocSaving(true);
+    setDocErr('');
+    const label = kind === 'prep' ? 'Interview Prep' : kind === 'cover' ? 'Cover Letter' : 'Follow-up';
+    try {
+      const res = await fetch('/api/gdoc', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: `${label} — ${role.co} — ${role.role}`, text }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to save');
+      setDocUrl(data.url);
+    } catch (e: any) {
+      setDocErr(e?.message || 'Failed to save');
+    } finally {
+      setDocSaving(false);
     }
   }
 
@@ -1420,7 +1445,62 @@ function DrawerAssistant({ role }: { role: Role }) {
                 >
                   Regenerate
                 </button>
+                {docUrl ? (
+                  <a
+                    href={docUrl}
+                    target="_blank"
+                    rel="noopener"
+                    style={{
+                      fontFamily: sans,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      padding: '6px 12px',
+                      borderRadius: 8,
+                      border: '1px solid #2e7d6e',
+                      background: '#dcefe9',
+                      color: '#2e7d6e',
+                      textDecoration: 'none',
+                    }}
+                  >
+                    Open in Google Docs ↗
+                  </a>
+                ) : (
+                  <button
+                    onClick={saveDoc}
+                    disabled={docSaving}
+                    style={{
+                      fontFamily: sans,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      padding: '6px 12px',
+                      borderRadius: 8,
+                      border: '1px solid #ddd0b5',
+                      background: '#efe6d3',
+                      color: '#574e40',
+                      cursor: docSaving ? 'default' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                    }}
+                  >
+                    {docSaving && (
+                      <span
+                        style={{
+                          width: 11,
+                          height: 11,
+                          border: '2px solid #cbbfa6',
+                          borderTopColor: '#574e40',
+                          borderRadius: '50%',
+                          display: 'inline-block',
+                          animation: 'spin 0.7s linear infinite',
+                        }}
+                      />
+                    )}
+                    {docSaving ? 'Saving…' : '📄 Save to Google Doc'}
+                  </button>
+                )}
               </div>
+              {docErr && <div style={{ fontSize: 11.5, color: '#a8462f', marginTop: 8 }}>{docErr}</div>}
             </>
           )}
         </div>
