@@ -48,15 +48,25 @@ function dedupe(listings: Listing[]): Listing[] {
   });
 }
 
-async function searchAdzuna(query: string, track: string, limit: number): Promise<Listing[]> {
+async function searchAdzuna(
+  query: string,
+  track: string,
+  limit: number,
+  where: string | null,
+): Promise<Listing[]> {
   const country = process.env.ADZUNA_COUNTRY || 'us';
   const url = new URL(`https://api.adzuna.com/v1/api/jobs/${country}/search/1`);
   url.searchParams.set('app_id', process.env.ADZUNA_APP_ID as string);
   url.searchParams.set('app_key', process.env.ADZUNA_APP_KEY as string);
   url.searchParams.set('results_per_page', String(limit));
-  url.searchParams.set('what', query);
-  url.searchParams.set('where', DEFAULT_LOCATION);
-  url.searchParams.set('content-type', 'application/json');
+  // `what_or` matches ANY of the words (recall-friendly), then Adzuna relevance-ranks.
+  url.searchParams.set('what_or', query);
+  url.searchParams.set('sort_by', 'relevance');
+  // `where` is optional: null means a nationwide search (used for remote tracks).
+  if (where) {
+    url.searchParams.set('where', where);
+    url.searchParams.set('distance', '50'); // km (~30 mi) around the location
+  }
 
   const res = await fetch(url.toString(), { cache: 'no-store' });
   if (!res.ok) throw new Error(`Adzuna ${res.status}`);
@@ -78,9 +88,14 @@ async function searchAdzuna(query: string, track: string, limit: number): Promis
   }));
 }
 
-async function searchJSearch(query: string, track: string, limit: number): Promise<Listing[]> {
+async function searchJSearch(
+  query: string,
+  track: string,
+  limit: number,
+  where: string | null,
+): Promise<Listing[]> {
   const url = new URL('https://jsearch.p.rapidapi.com/search');
-  url.searchParams.set('query', `${query} in ${DEFAULT_LOCATION}`);
+  url.searchParams.set('query', where ? `${query} in ${where}` : `${query} remote`);
   url.searchParams.set('num_pages', '1');
   const res = await fetch(url.toString(), {
     cache: 'no-store',
@@ -108,10 +123,15 @@ async function searchJSearch(query: string, track: string, limit: number): Promi
   }));
 }
 
-async function searchSerpApi(query: string, track: string, limit: number): Promise<Listing[]> {
+async function searchSerpApi(
+  query: string,
+  track: string,
+  limit: number,
+  where: string | null,
+): Promise<Listing[]> {
   const url = new URL('https://serpapi.com/search.json');
   url.searchParams.set('engine', 'google_jobs');
-  url.searchParams.set('q', `${query} ${DEFAULT_LOCATION}`);
+  url.searchParams.set('q', where ? `${query} ${where}` : `${query} remote`);
   url.searchParams.set('api_key', process.env.SERPAPI_KEY as string);
   const res = await fetch(url.toString(), { cache: 'no-store' });
   if (!res.ok) throw new Error(`SerpApi ${res.status}`);
@@ -146,25 +166,30 @@ async function runProvider(
   query: string,
   track: string,
   limit: number,
+  where: string | null,
 ): Promise<Listing[]> {
   switch (provider) {
     case 'adzuna':
-      return searchAdzuna(query, track, limit);
+      return searchAdzuna(query, track, limit, where);
     case 'jsearch':
-      return searchJSearch(query, track, limit);
+      return searchJSearch(query, track, limit, where);
     case 'serpapi':
-      return searchSerpApi(query, track, limit);
+      return searchSerpApi(query, track, limit, where);
     default:
       return sampleListings(track);
   }
 }
 
+/** A single recommendation query. `where` undefined → default location; null → nationwide. */
+export type RecQuery = { text: string; track: string; where?: string | null };
+
 /**
- * Fetch recommendations for a set of (booleanString, track) queries.
- * Runs each query, distills it to keywords, dedupes results across queries.
+ * Fetch recommendations for a set of (query, track) pairs, deduping across them.
+ * Queries here are concise keyword strings (not raw boolean strings) suited to
+ * aggregator APIs; toKeywords still guards against a stray boolean string.
  */
 export async function fetchRecommendations(
-  queries: { text: string; track: string }[],
+  queries: RecQuery[],
   perQuery = 5,
 ): Promise<{ listings: Listing[]; provider: Provider; errors: string[] }> {
   const provider = activeProvider();
@@ -173,8 +198,10 @@ export async function fetchRecommendations(
 
   for (const q of queries) {
     const kw = toKeywords(q.text);
+    // undefined => default location; null => nationwide (remote tracks)
+    const where = q.where === null ? null : q.where || DEFAULT_LOCATION;
     try {
-      const found = await runProvider(provider, kw, q.track, perQuery);
+      const found = await runProvider(provider, kw, q.track, perQuery, where);
       all.push(...found);
     } catch (e: any) {
       errors.push(`${q.track}: ${e?.message || 'query failed'}`);

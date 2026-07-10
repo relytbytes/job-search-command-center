@@ -1,39 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { fetchRecommendations } from '@/lib/jobapi';
-import { TERM_GROUPS } from '@/lib/seed';
+import { fetchRecommendations, type RecQuery } from '@/lib/jobapi';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * Maps a boolean-search term group to the role "track" it feeds. Keeps recommendations
- * grouped by the same lanes the pipeline uses.
+ * Concise, aggregator-friendly keyword queries per track. These feed Adzuna's
+ * `what_or` (match ANY word, then relevance-rank), which is what returns real
+ * results — the raw boolean search strings are built for LinkedIn/Google and
+ * over-constrain keyword APIs to zero hits. Track names match the role "track"
+ * values so the UI's per-track filter lines up.
+ *
+ * `where: null` = nationwide (for the inherently-remote track); others default
+ * to the configured location (Raleigh) with a ~30mi radius.
  */
-const GROUP_TO_TRACK: Record<string, string> = {
-  'Hospitality Leadership (F&B Director / GM / Beverage Director)': 'F&B Director / GM',
-  'Wine & Spirits Distribution / Beverage Sales': 'Foodservice Sales',
-  'Remote Hospitality SaaS / Tech Sales': 'Remote Hospitality SaaS / Tech',
-  'Aviation / Ops-Adjacent Management': 'Aviation / Airport Operations',
-  'General Management (cross-industry)': 'Operations / Business Development',
-  'Procurement / Supply Chain': 'Procurement / Supply Chain',
-  'Aviation, Airport & RDU-Adjacent': 'Aviation / Airport Operations',
-  'Foodservice Sales & Account Management': 'Foodservice Sales',
-};
+const TRACK_QUERIES: RecQuery[] = [
+  { track: 'F&B Director / GM', text: 'restaurant general manager food beverage director hospitality' },
+  { track: 'Foodservice Sales', text: 'foodservice sales territory account manager food distributor' },
+  { track: 'Procurement / Supply Chain', text: 'procurement buyer purchasing supply chain sourcing planner' },
+  { track: 'Aviation / Airport Operations', text: 'airport aviation operations manager ground station' },
+  { track: 'Operations / Business Development', text: 'operations manager business development director' },
+  {
+    track: 'Remote Hospitality SaaS / Tech',
+    text: 'restaurant hospitality account executive customer success',
+    where: null,
+  },
+];
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const only = searchParams.get('track'); // optional: restrict to one track/group
+  const only = searchParams.get('track'); // optional: restrict to one track
   const custom = searchParams.get('q'); // optional: a raw query overriding the presets
-  const perQuery = Math.min(Number(searchParams.get('per') || 5), 10);
+  const perQuery = Math.min(Number(searchParams.get('per') || 8), 15);
 
-  let queries: { text: string; track: string }[];
+  let queries: RecQuery[];
   if (custom) {
     queries = [{ text: custom, track: only || 'Custom' }];
   } else {
-    // One representative query (the first, most-targeted string) per relevant group.
-    queries = TERM_GROUPS.map((g) => ({
-      text: g.items[0],
-      track: GROUP_TO_TRACK[g.title] || g.title,
-    })).filter((q) => !only || q.track === only);
+    queries = only ? TRACK_QUERIES.filter((q) => q.track === only) : TRACK_QUERIES;
   }
 
   try {
