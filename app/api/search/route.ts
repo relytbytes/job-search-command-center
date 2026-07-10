@@ -1,30 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchRecommendations, type RecQuery } from '@/lib/jobapi';
+import { REC_TRACKS } from '@/lib/recTracks';
 
 export const dynamic = 'force-dynamic';
-
-/**
- * Concise, aggregator-friendly keyword queries per track. These feed Adzuna's
- * `what_or` (match ANY word, then relevance-rank), which is what returns real
- * results — the raw boolean search strings are built for LinkedIn/Google and
- * over-constrain keyword APIs to zero hits. Track names match the role "track"
- * values so the UI's per-track filter lines up.
- *
- * `where: null` = nationwide (for the inherently-remote track); others default
- * to the configured location (Raleigh) with a ~30mi radius.
- */
-const TRACK_QUERIES: RecQuery[] = [
-  { track: 'F&B Director / GM', text: 'restaurant general manager food beverage director hospitality' },
-  { track: 'Foodservice Sales', text: 'foodservice sales territory account manager food distributor' },
-  { track: 'Procurement / Supply Chain', text: 'procurement buyer purchasing supply chain sourcing planner' },
-  { track: 'Aviation / Airport Operations', text: 'airport aviation operations manager ground station' },
-  { track: 'Operations / Business Development', text: 'operations manager business development director' },
-  {
-    track: 'Remote Hospitality SaaS / Tech',
-    text: 'restaurant hospitality account executive customer success',
-    where: null,
-  },
-];
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -36,7 +14,7 @@ export async function GET(req: NextRequest) {
   if (custom) {
     queries = [{ text: custom, track: only || 'Custom' }];
   } else {
-    queries = only ? TRACK_QUERIES.filter((q) => q.track === only) : TRACK_QUERIES;
+    queries = only ? REC_TRACKS.filter((q) => q.track === only) : REC_TRACKS;
   }
 
   try {

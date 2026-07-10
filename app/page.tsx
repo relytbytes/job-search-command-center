@@ -9,6 +9,7 @@ import {
   TERM_GROUPS,
   BOARD_GROUPS,
 } from '@/lib/seed';
+import { REC_TRACK_NAMES } from '@/lib/recTracks';
 
 const LS_KEY = 'tsl-tracker-v1';
 
@@ -723,9 +724,6 @@ export default function Page() {
           <RecommendedTab
             existing={roles}
             writable={writable}
-            trackChips={trackChips}
-            selectedTrack={track}
-            onTrack={setTrack}
             onAdded={(role) => setRoles((rs) => [...rs, role])}
           />
         )}
@@ -1063,9 +1061,6 @@ function buildFields(r: Role): { label: string; value: string }[] {
 function RecommendedTab(props: {
   existing: Role[];
   writable: boolean;
-  trackChips: { key: string; label: string }[];
-  selectedTrack: string;
-  onTrack: (t: string) => void;
   onAdded: (role: Role) => void;
 }) {
   const [listings, setListings] = useState<Listing[]>([]);
@@ -1076,10 +1071,11 @@ function RecommendedTab(props: {
   const [added, setAdded] = useState<Record<string, 'saving' | 'done' | 'error'>>({});
   const [filter, setFilter] = useState('All');
 
-  async function load() {
+  async function load(f: string = filter) {
+    setFilter(f);
     setLoading(true);
     try {
-      const url = filter === 'All' ? '/api/search' : `/api/search?track=${encodeURIComponent(filter)}`;
+      const url = f === 'All' ? '/api/search' : `/api/search?track=${encodeURIComponent(f)}`;
       const res = await fetch(url);
       const data = await res.json();
       setListings(data.listings || []);
@@ -1163,7 +1159,7 @@ function RecommendedTab(props: {
           click.
         </p>
         <button
-          onClick={load}
+          onClick={() => load()}
           disabled={loading}
           style={{
             fontFamily: sans,
@@ -1214,40 +1210,22 @@ function RecommendedTab(props: {
         {providerLabel}
       </div>
 
-      {/* track filter */}
+      {/* track filter — resume-aligned recommendation lanes; clicking loads that lane */}
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 22 }}>
-        {props.trackChips.map((c) => (
-          <button
-            key={c.key}
-            onClick={() => {
-              setFilter(c.key);
-            }}
-            style={chipStyle(filter === c.key)}
-          >
-            {c.label}
-          </button>
-        ))}
+        {[{ key: 'All', label: 'All Tracks' }, ...REC_TRACK_NAMES.map((t) => ({ key: t, label: t }))].map(
+          (c) => (
+            <button
+              key={c.key}
+              onClick={() => {
+                if (!loading) load(c.key);
+              }}
+              style={chipStyle(filter === c.key)}
+            >
+              {c.label}
+            </button>
+          ),
+        )}
       </div>
-      {filter !== 'All' && !loading && (
-        <div style={{ marginBottom: 18 }}>
-          <button
-            onClick={load}
-            style={{
-              fontFamily: sans,
-              fontSize: 12.5,
-              fontWeight: 600,
-              padding: '6px 14px',
-              borderRadius: 8,
-              border: '1px solid #ddd6c9',
-              background: '#f2ede3',
-              color: '#55504a',
-              cursor: 'pointer',
-            }}
-          >
-            Search “{filter}” →
-          </button>
-        </div>
-      )}
 
       {errors.length > 0 && (
         <div style={{ fontSize: 12, color: '#a8443a', marginBottom: 16 }}>
