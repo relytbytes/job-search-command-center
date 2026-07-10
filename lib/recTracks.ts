@@ -5,37 +5,38 @@
  * procurement/inventory. Aviation is intentionally excluded — the resume shows an
  * associate degree but no aviation work history, so those postings aren't a fit.
  *
- * Each `text` is a concise keyword set fed to the aggregator's ANY-match mode and
- * relevance-ranked. `where: null` = nationwide (for inherently-remote lanes).
- * These track names are the grouping shown in the Recommended tab.
+ * Each track lists exact job-title PHRASES. The search runs one exact-phrase query
+ * per title (Adzuna `what_phrase`), which is precise — "beverage director" won't
+ * match a Dollar General store manager or a nurse the way loose keyword-OR did.
+ * `where: null` = nationwide (for inherently-remote lanes).
  */
-export type RecTrack = { track: string; text: string; where?: string | null };
+export type RecTrack = { track: string; phrases: string[]; where?: string | null };
 
 export const REC_TRACKS: RecTrack[] = [
   {
     track: 'Beverage / Wine Director',
-    text: 'beverage director wine director sommelier beverage manager',
+    phrases: ['beverage director', 'wine director', 'sommelier'],
   },
   {
     track: 'Wine & Spirits Sales / Distribution',
-    text: 'wine spirits sales representative distributor key account market development manager',
+    phrases: ['wine sales representative', 'spirits sales', 'beverage account manager', 'market development manager'],
   },
   {
     track: 'Restaurant / F&B Management',
-    text: 'general manager assistant general manager restaurant food beverage director hospitality',
+    phrases: ['food and beverage director', 'restaurant general manager', 'restaurant manager'],
   },
   {
     track: 'Hospitality & B2B Sales / Accounts',
-    text: 'account executive account manager business development territory sales',
+    phrases: ['key account manager', 'business development manager', 'sales account executive'],
   },
   {
     track: 'Remote Hospitality Tech Sales',
-    text: 'restaurant hospitality account executive customer success software',
+    phrases: ['restaurant account executive', 'hospitality account executive', 'customer success manager'],
     where: null,
   },
   {
     track: 'Procurement / Purchasing / Inventory',
-    text: 'buyer purchasing procurement inventory forecasting supply',
+    phrases: ['procurement manager', 'purchasing manager', 'inventory manager', 'buyer'],
   },
 ];
 

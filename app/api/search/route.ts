@@ -14,7 +14,11 @@ export async function GET(req: NextRequest) {
   if (custom) {
     queries = [{ text: custom, track: only || 'Custom' }];
   } else {
-    queries = only ? REC_TRACKS.filter((q) => q.track === only) : REC_TRACKS;
+    const tracks = only ? REC_TRACKS.filter((t) => t.track === only) : REC_TRACKS;
+    // One exact-phrase query per title within each track.
+    queries = tracks.flatMap((t) =>
+      t.phrases.map((p) => ({ text: p, track: t.track, where: t.where })),
+    );
   }
 
   try {

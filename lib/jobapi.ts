@@ -59,8 +59,11 @@ async function searchAdzuna(
   url.searchParams.set('app_id', process.env.ADZUNA_APP_ID as string);
   url.searchParams.set('app_key', process.env.ADZUNA_APP_KEY as string);
   url.searchParams.set('results_per_page', String(limit));
-  // `what_or` matches ANY of the words (recall-friendly), then Adzuna relevance-ranks.
-  url.searchParams.set('what_or', query);
+  // `what_phrase` requires the exact title phrase to appear — precise, so
+  // "beverage director" won't pull a Dollar General "store manager" or a nurse.
+  url.searchParams.set('what_phrase', query);
+  // Prune obviously-irrelevant job types that occasionally slip through.
+  url.searchParams.set('what_exclude', 'nurse RN CNA caregiver driver warehouse cashier dishwasher');
   url.searchParams.set('sort_by', 'relevance');
   // `where` is optional: null means a nationwide search (used for remote tracks).
   if (where) {
@@ -95,7 +98,7 @@ async function searchJSearch(
   where: string | null,
 ): Promise<Listing[]> {
   const url = new URL('https://jsearch.p.rapidapi.com/search');
-  url.searchParams.set('query', where ? `${query} in ${where}` : `${query} remote`);
+  url.searchParams.set('query', where ? `"${query}" in ${where}` : `"${query}" remote`);
   url.searchParams.set('num_pages', '1');
   const res = await fetch(url.toString(), {
     cache: 'no-store',
@@ -131,7 +134,7 @@ async function searchSerpApi(
 ): Promise<Listing[]> {
   const url = new URL('https://serpapi.com/search.json');
   url.searchParams.set('engine', 'google_jobs');
-  url.searchParams.set('q', where ? `${query} ${where}` : `${query} remote`);
+  url.searchParams.set('q', where ? `"${query}" ${where}` : `"${query}" remote`);
   url.searchParams.set('api_key', process.env.SERPAPI_KEY as string);
   const res = await fetch(url.toString(), { cache: 'no-store' });
   if (!res.ok) throw new Error(`SerpApi ${res.status}`);
@@ -196,17 +199,24 @@ export async function fetchRecommendations(
   const errors: string[] = [];
   const all: Listing[] = [];
 
-  for (const q of queries) {
-    const kw = toKeywords(q.text);
-    // undefined => default location; null => nationwide (remote tracks)
-    const where = q.where === null ? null : q.where || DEFAULT_LOCATION;
-    try {
-      const found = await runProvider(provider, kw, q.track, perQuery, where);
-      all.push(...found);
-    } catch (e: any) {
-      errors.push(`${q.track}: ${e?.message || 'query failed'}`);
+  // Run all phrase queries concurrently — many small calls would otherwise risk
+  // a serverless function timeout when run one-by-one.
+  const settled = await Promise.allSettled(
+    queries.map((q) => {
+      const kw = toKeywords(q.text);
+      // undefined => default location; null => nationwide (remote tracks)
+      const where = q.where === null ? null : q.where || DEFAULT_LOCATION;
+      return runProvider(provider, kw, q.track, perQuery, where).then((found) => ({ q, found }));
+    }),
+  );
+
+  settled.forEach((r, i) => {
+    if (r.status === 'fulfilled') {
+      all.push(...r.value.found);
+    } else {
+      errors.push(`${queries[i].track}: ${r.reason?.message || 'query failed'}`);
     }
-  }
+  });
 
   return { listings: dedupe(all), provider, errors };
 }
