@@ -12,6 +12,10 @@
  */
 export type RecTrack = { track: string; phrases: string[]; where?: string | null };
 
+// Title-only search ANDs every word and matches the job TITLE, so phrases must be
+// words that appear in real titles (no stopwords like "and") and be specific
+// enough to the lane's industry — generic titles like "market development manager"
+// pull cross-industry noise, so they're avoided here.
 export const REC_TRACKS: RecTrack[] = [
   {
     track: 'Beverage / Wine Director',
@@ -19,24 +23,24 @@ export const REC_TRACKS: RecTrack[] = [
   },
   {
     track: 'Wine & Spirits Sales / Distribution',
-    phrases: ['wine sales representative', 'spirits sales', 'beverage account manager', 'market development manager'],
+    phrases: ['wine sales', 'spirits sales', 'beverage sales manager'],
   },
   {
     track: 'Restaurant / F&B Management',
-    phrases: ['food and beverage director', 'restaurant general manager', 'restaurant manager'],
+    phrases: ['food beverage director', 'restaurant general manager', 'restaurant manager'],
   },
   {
     track: 'Hospitality & B2B Sales / Accounts',
-    phrases: ['key account manager', 'business development manager', 'sales account executive'],
+    phrases: ['key account manager', 'business development manager', 'territory sales manager'],
   },
   {
     track: 'Remote Hospitality Tech Sales',
-    phrases: ['restaurant account executive', 'hospitality account executive', 'customer success manager'],
+    phrases: ['restaurant account executive', 'hospitality account executive', 'restaurant customer success'],
     where: null,
   },
   {
     track: 'Procurement / Purchasing / Inventory',
-    phrases: ['procurement manager', 'purchasing manager', 'inventory manager', 'buyer'],
+    phrases: ['procurement manager', 'purchasing manager', 'buyer'],
   },
 ];
 

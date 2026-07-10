@@ -59,9 +59,10 @@ async function searchAdzuna(
   url.searchParams.set('app_id', process.env.ADZUNA_APP_ID as string);
   url.searchParams.set('app_key', process.env.ADZUNA_APP_KEY as string);
   url.searchParams.set('results_per_page', String(limit));
-  // `what_phrase` requires the exact title phrase to appear — precise, so
-  // "beverage director" won't pull a Dollar General "store manager" or a nurse.
-  url.searchParams.set('what_phrase', query);
+  // `title_only` matches the words in the job TITLE only — so "beverage director"
+  // hits titles like "Beverage Director", not a Sous Chef whose description happens
+  // to mention food & beverage. This is the key to relevant results.
+  url.searchParams.set('title_only', query);
   // Prune obviously-irrelevant job types that occasionally slip through.
   url.searchParams.set('what_exclude', 'nurse RN CNA caregiver driver warehouse cashier dishwasher');
   url.searchParams.set('sort_by', 'relevance');
@@ -199,24 +200,45 @@ export async function fetchRecommendations(
   const errors: string[] = [];
   const all: Listing[] = [];
 
-  // Run all phrase queries concurrently — many small calls would otherwise risk
-  // a serverless function timeout when run one-by-one.
-  const settled = await Promise.allSettled(
-    queries.map((q) => {
-      const kw = toKeywords(q.text);
-      // undefined => default location; null => nationwide (remote tracks)
-      const where = q.where === null ? null : q.where || DEFAULT_LOCATION;
-      return runProvider(provider, kw, q.track, perQuery, where).then((found) => ({ q, found }));
-    }),
-  );
+  // Build one task per query, then run with limited concurrency: enough to stay
+  // fast and under a serverless timeout, but few enough to avoid Adzuna's
+  // rate limit (429) that firing them all at once triggers.
+  const tasks = queries.map((q) => async () => {
+    const kw = toKeywords(q.text);
+    // undefined => default location; null => nationwide (remote tracks)
+    const where = q.where === null ? null : q.where || DEFAULT_LOCATION;
+    return runProvider(provider, kw, q.track, perQuery, where);
+  });
 
+  const settled = await runWithConcurrency(tasks, 3);
   settled.forEach((r, i) => {
     if (r.status === 'fulfilled') {
-      all.push(...r.value.found);
+      all.push(...r.value);
     } else {
       errors.push(`${queries[i].track}: ${r.reason?.message || 'query failed'}`);
     }
   });
 
   return { listings: dedupe(all), provider, errors };
+}
+
+/** Run async tasks with at most `limit` in flight at once; never rejects. */
+async function runWithConcurrency<T>(
+  tasks: (() => Promise<T>)[],
+  limit: number,
+): Promise<PromiseSettledResult<T>[]> {
+  const results: PromiseSettledResult<T>[] = new Array(tasks.length);
+  let next = 0;
+  async function worker() {
+    while (next < tasks.length) {
+      const idx = next++;
+      try {
+        results[idx] = { status: 'fulfilled', value: await tasks[idx]() };
+      } catch (reason) {
+        results[idx] = { status: 'rejected', reason } as PromiseRejectedResult;
+      }
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, tasks.length) }, worker));
+  return results;
 }
