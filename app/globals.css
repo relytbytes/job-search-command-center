@@ -1,11 +1,11 @@
-/* Palette + primitives ported verbatim from the Claude Design prototype. */
+/* Palette + primitives ported from the "Landed" Claude Design redesign. */
 :root {
-  --paper: #efeae1;
-  --card: #fffdf9;
-  --card-border: #e4ded1;
-  --ink: #211f1b;
-  --accent: #b0542f;
-  --accent-hover: #8f4223;
+  --paper: #f2e9d5;
+  --card: #fdf7ea;
+  --card-border: #e4d8bf;
+  --ink: #2f2a23;
+  --accent: #c15b34;
+  --accent-hover: #9e4526;
 }
 
 * { box-sizing: border-box; }
@@ -16,18 +16,22 @@ body {
   font-family: 'IBM Plex Sans', system-ui, sans-serif;
 }
 
-[data-tracker] { --accent: #b0542f; }
+[data-tracker] { --accent: #c15b34; }
 
 ::-webkit-scrollbar { height: 10px; width: 10px; }
-::-webkit-scrollbar-thumb { background: #d3cdc0; border-radius: 6px; }
+::-webkit-scrollbar-thumb { background: #d8cdb4; border-radius: 6px; }
+::-webkit-scrollbar-thumb:hover { background: #c8b89b; }
 ::-webkit-scrollbar-track { background: transparent; }
 
 a { color: var(--accent); text-decoration: none; }
 a:hover { color: var(--accent-hover); text-decoration: underline; }
 
+input, textarea, select { font-family: 'IBM Plex Sans', sans-serif; }
+input::placeholder, textarea::placeholder { color: #b3a88f; }
+
 @keyframes slideIn { from { transform: translateX(24px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes growBar { from { flex-grow: 0.001; } to { } }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 button { font-family: inherit; }
-input { font-family: inherit; }

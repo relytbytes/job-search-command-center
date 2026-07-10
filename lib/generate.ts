@@ -29,6 +29,7 @@ function roleContext(role: Role): string {
     role.status && `Current pipeline stage: ${role.status}`,
     role.contact && `Contact: ${role.contact}`,
     role.next && `Next action noted: ${role.next}`,
+    role.notes && `Candidate's notes on this role: ${role.notes}`,
   ].filter(Boolean);
   return lines.join('\n');
 }

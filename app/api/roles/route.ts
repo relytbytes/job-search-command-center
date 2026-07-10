@@ -37,6 +37,7 @@ export async function POST(req: NextRequest) {
       prio: body.prio || '',
       contact: body.contact || '',
       next: body.next || '',
+      notes: body.notes || '',
     });
     return NextResponse.json({ role: created });
   } catch (e: any) {

@@ -11,6 +11,7 @@ export type Role = {
   prio: string;
   contact: string;
   next: string;
+  notes: string;
 };
 
 export type StatusMeta = { key: string; color: string; bg: string };
@@ -49,4 +50,5 @@ export const SHEET_HEADERS = [
   'Priority',
   'Contact',
   'Next Action',
+  'Notes',
 ] as const;

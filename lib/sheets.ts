@@ -33,8 +33,24 @@ function getClient(): sheets_v4.Sheets {
 
 const sheetId = () => process.env.GOOGLE_SHEET_ID as string;
 
-/** Data rows only (excludes the header row). Range like Tracker!A2:K. */
-const dataRange = () => `${TAB}!A2:K`;
+/** Data rows only (excludes the header row). Range like Tracker!A2:L. */
+const dataRange = () => `${TAB}!A2:L`;
+
+/** Column index within a row for each editable Role field (SHEET_HEADERS order). */
+const FIELD_COL: Record<string, number> = {
+  co: 0,
+  role: 1,
+  src: 2,
+  loc: 3,
+  type: 4,
+  sal: 5,
+  track: 6,
+  status: 7,
+  prio: 8,
+  contact: 9,
+  next: 10,
+  notes: 11,
+};
 
 /**
  * Read all roles. Falls back to seed data when Sheets is not configured.
@@ -67,10 +83,12 @@ function sheetRowForId(id: string): number | null {
  * Update a single role's status (and optionally other editable fields) in the sheet.
  * Throws if Sheets is not configured — callers should guard with sheetsConfigured().
  */
-export async function updateRole(
-  id: string,
-  patch: Partial<Pick<Role, 'status' | 'prio' | 'next' | 'contact'>>,
-): Promise<void> {
+/** Fields the drawer editor / drag-and-drop may write back to the sheet. */
+export type RolePatch = Partial<
+  Pick<Role, 'co' | 'role' | 'track' | 'loc' | 'sal' | 'status' | 'prio' | 'contact' | 'next' | 'notes'>
+>;
+
+export async function updateRole(id: string, patch: RolePatch): Promise<void> {
   const rowNum = sheetRowForId(id);
   if (rowNum == null) throw new Error(`Invalid role id: ${id}`);
   const sheets = getClient();
@@ -78,21 +96,44 @@ export async function updateRole(
   // Read the current row, apply the patch, write it back — keeps other columns intact.
   const cur = await sheets.spreadsheets.values.get({
     spreadsheetId: sheetId(),
-    range: `${TAB}!A${rowNum}:K${rowNum}`,
+    range: `${TAB}!A${rowNum}:L${rowNum}`,
   });
   const row = (cur.data.values?.[0] as string[]) || new Array(SHEET_HEADERS.length).fill('');
   while (row.length < SHEET_HEADERS.length) row.push('');
 
-  const col: Record<keyof typeof patch, number> = { status: 7, prio: 8, contact: 9, next: 10 };
-  (Object.keys(patch) as (keyof typeof patch)[]).forEach((k) => {
-    if (patch[k] != null) row[col[k]] = patch[k] as string;
+  (Object.keys(patch) as (keyof RolePatch)[]).forEach((k) => {
+    const col = FIELD_COL[k];
+    if (col != null && patch[k] != null) row[col] = patch[k] as string;
   });
 
   await sheets.spreadsheets.values.update({
     spreadsheetId: sheetId(),
-    range: `${TAB}!A${rowNum}:K${rowNum}`,
+    range: `${TAB}!A${rowNum}:L${rowNum}`,
     valueInputOption: 'RAW',
     requestBody: { values: [row] },
+  });
+}
+
+/** Delete a role's row from the tracker tab. */
+export async function deleteRole(id: string): Promise<void> {
+  const rowNum = sheetRowForId(id);
+  if (rowNum == null) throw new Error(`Invalid role id: ${id}`);
+  const sheets = getClient();
+  const meta = await sheets.spreadsheets.get({ spreadsheetId: sheetId() });
+  const sh = (meta.data.sheets || []).find((s) => s.properties?.title === TAB);
+  const gid = sh?.properties?.sheetId;
+  if (gid == null) throw new Error(`Tab not found: ${TAB}`);
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId: sheetId(),
+    requestBody: {
+      requests: [
+        {
+          deleteDimension: {
+            range: { sheetId: gid, dimension: 'ROWS', startIndex: rowNum - 1, endIndex: rowNum },
+          },
+        },
+      ],
+    },
   });
 }
 

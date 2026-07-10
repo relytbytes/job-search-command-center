@@ -1,7 +1,9 @@
-# Job Search Command Center
+# Landed — Job Search Command Center
 
 An interactive job-search pipeline for Tyler Shelton — built from the Claude Design
-prototype in `project/` and wired up to be **live**:
+prototype in `project/` (latest "Landed" redesign: warm palette, Jost display font,
+pipeline momentum bar, computed focus queue, and a fully editable role drawer) and
+wired up to be **live**:
 
 - **Google Sheets is the source of truth.** Edits in the sheet show up in the app, and status
   changes in the app write straight back to the sheet. Your spreadsheet stays the system of record.
@@ -16,7 +18,8 @@ It runs out of the box with the 55 seeded roles as demo data — no credentials 
 
 | Tab | What it does |
 | --- | --- |
-| **Pipeline** | Drag-and-drop Kanban across 9 stages, plus a sortable table view. Live stats, focus queue, and filters by track & priority. Drag a card (or use the detail drawer) to change stage — it persists to your sheet. |
+| **Pipeline** | Drag-and-drop Kanban across 9 stages + a **sortable** table view (click any header). Live stats, a **pipeline momentum bar** with response rate, a **computed focus queue** (click-through to the role), and filters by track & priority. **Add role** button. |
+| **Editable drawer** | Clicking a role opens a full editor — company, role, track, priority, location, salary, next action, and a **Notes** field — all persisted to your sheet. Change stage, or **remove** the role. |
 | **Recommended** | New roles pulled from the job-search API, grouped by track. "+ Add to pipeline" appends them to your sheet. Already-tracked companies are flagged so you don't double-add. |
 | **Application Assistant** | Inside each role's detail drawer — one-click **cover letter** and **follow-up email** generation via Claude, tailored to that role and grounded in your resume (`lib/resume.ts`). Optional "what to emphasize" note; copy or regenerate. |
 | **Search Strings** | Your boolean search strings, grouped by lane, each with one-click copy. |

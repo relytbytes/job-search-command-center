@@ -1,29 +1,41 @@
 import type { Role, StatusMeta, TermGroup, BoardGroup } from './types';
 
-/** Pipeline stages, in order, with their card/pill colors. Ported from the prototype. */
+/** Pipeline stages, in order, with their card/pill colors. Ported from the "Landed" redesign. */
 export const STATUS_META: StatusMeta[] = [
-  { key: 'Ready to Apply', color: '#5b57d6', bg: '#eceafa' },
-  { key: 'In Progress', color: '#b07000', bg: '#f8eeda' },
-  { key: 'Applied', color: '#2f6bb0', bg: '#e6eef8' },
-  { key: 'Phone Screen', color: '#1f8a6d', bg: '#e1f2ec' },
-  { key: 'Interviewing', color: '#1f8a5b', bg: '#e1f2e8' },
-  { key: 'Offer', color: '#9a7500', bg: '#f7efd6' },
-  { key: 'Hold', color: '#6f6a60', bg: '#ede9e0' },
-  { key: 'Skip', color: '#8a857b', bg: '#ece8df' },
-  { key: 'Rejected', color: '#a8443a', bg: '#f5e5e1' },
+  { key: 'Ready to Apply', color: '#3f7d8c', bg: '#e2edf0' },
+  { key: 'In Progress', color: '#b8842a', bg: '#f4e9cc' },
+  { key: 'Applied', color: '#c15b34', bg: '#f6e2d5' },
+  { key: 'Phone Screen', color: '#2e7d6e', bg: '#dcefe9' },
+  { key: 'Interviewing', color: '#5f7a35', bg: '#e8edcf' },
+  { key: 'Offer', color: '#a8791a', bg: '#f2e7c6' },
+  { key: 'Hold', color: '#8a7d63', bg: '#ece3d0' },
+  { key: 'Skip', color: '#a2957c', bg: '#ece3d0' },
+  { key: 'Rejected', color: '#a8462f', bg: '#f2ddd4' },
 ];
 
 export function statusMeta(k: string): StatusMeta {
-  return STATUS_META.find((s) => s.key === k) || { key: k, color: '#8a857b', bg: '#ece8df' };
+  return STATUS_META.find((s) => s.key === k) || { key: k, color: '#a2957c', bg: '#ece3d0' };
 }
 
 export const PRIO_META: Record<string, string> = {
-  'Very High': '#b0542f',
-  High: '#cf8a3a',
-  Medium: '#9a9488',
-  Low: '#c3bdb0',
-  '': '#d8d2c5',
+  'Very High': '#b0442c',
+  High: '#c8901f',
+  Medium: '#9a8f77',
+  Low: '#cbbfa6',
+  '': '#ddd2ba',
 };
+
+/** Sort/priority ordering used by the focus queue and the sortable table. */
+export const PRIO_RANK: Record<string, number> = {
+  'Very High': 0,
+  High: 1,
+  Medium: 2,
+  Low: 3,
+  '': 4,
+};
+export function prioRank(p: string): number {
+  return PRIO_RANK[p] ?? 4;
+}
 
 // [co, role, src, loc, type, sal, track, status, prio, contact, next]
 const RAW: string[][] = [
@@ -98,12 +110,13 @@ export function seedRoles(): Role[] {
     prio: r[8],
     contact: r[9],
     next: r[10],
+    notes: r[11] || '',
   }));
 }
 
 /** Convert a Role to a Sheet row in SHEET_HEADERS order. */
 export function roleToRow(r: Role): string[] {
-  return [r.co, r.role, r.src, r.loc, r.type, r.sal, r.track, r.status, r.prio, r.contact, r.next];
+  return [r.co, r.role, r.src, r.loc, r.type, r.sal, r.track, r.status, r.prio, r.contact, r.next, r.notes];
 }
 
 /** Convert a Sheet row (SHEET_HEADERS order) plus its row index into a Role. */
@@ -122,6 +135,7 @@ export function rowToRole(row: string[], index: number): Role {
     prio: g(8),
     contact: g(9),
     next: g(10),
+    notes: g(11),
   };
 }
 
