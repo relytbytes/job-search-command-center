@@ -40,6 +40,24 @@ export function toKeywords(booleanString: string): string {
   return booleanString.replace(/\b(AND|OR|NOT)\b/g, ' ').replace(/[()"]/g, ' ').trim().slice(0, 80);
 }
 
+// Triangle-area allowlist. A listing is kept only if its location matches one of
+// these — a hard client-side guard so nothing national/remote/out-of-area slips
+// through regardless of the aggregator's own radius handling. Covers the towns
+// Tyler named plus their counties (Adzuna often reports "<City>, <County> County").
+const TRIANGLE_LOCS = [
+  'durham', 'raleigh', 'chapel hill', 'carrboro', 'cary', 'morrisville', 'apex',
+  'hillsborough', 'creedmoor', 'wake forest', 'garner', 'holly springs', 'fuquay',
+  'knightdale', 'clayton', 'pittsboro', 'wendell', 'zebulon', 'brier creek', 'brentwood',
+  'research triangle', 'rtp',
+  'durham county', 'wake county', 'orange county', 'chatham county',
+  'granville county', 'johnston county', 'franklin county',
+];
+export function inTriangle(loc: string): boolean {
+  const l = (loc || '').toLowerCase();
+  if (!l || l.includes('remote') || l.includes('united states')) return false;
+  return TRIANGLE_LOCS.some((t) => l.includes(t));
+}
+
 function dedupe(listings: Listing[]): Listing[] {
   const seen = new Set<string>();
   return listings.filter((l) => {
@@ -246,7 +264,10 @@ export async function fetchRecommendations(
     }
   });
 
-  return { listings: dedupe(all), provider, errors };
+  // Hard location guard: keep only Triangle-area listings (sample data is exempt
+  // so the no-key demo still shows something).
+  const local = provider === 'sample' ? all : all.filter((l) => inTriangle(l.loc));
+  return { listings: dedupe(local), provider, errors };
 }
 
 /** Run async tasks with at most `limit` in flight at once; never rejects. */

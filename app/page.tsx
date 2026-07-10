@@ -1297,15 +1297,16 @@ export default function Page() {
 }
 
 // ---- Application-writing assistant (in the detail drawer) ----
+type GenKind = 'cover' | 'followup' | 'prep';
 function DrawerAssistant({ role }: { role: Role }) {
   const [notes, setNotes] = useState('');
-  const [kind, setKind] = useState<'cover' | 'followup' | null>(null);
+  const [kind, setKind] = useState<GenKind | null>(null);
   const [loading, setLoading] = useState(false);
   const [text, setText] = useState('');
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
 
-  async function run(k: 'cover' | 'followup') {
+  async function run(k: GenKind) {
     setKind(k);
     setLoading(true);
     setError('');
@@ -1361,6 +1362,10 @@ function DrawerAssistant({ role }: { role: Role }) {
           {loading && kind === 'followup' && <Spinner />}
           Follow-up email
         </button>
+        <button onClick={() => !loading && run('prep')} disabled={loading} style={btn(kind === 'prep')}>
+          {loading && kind === 'prep' && <Spinner />}
+          Interview prep
+        </button>
       </div>
 
       {error && <div style={{ fontSize: 12, color: '#a8462f', marginTop: 12, lineHeight: 1.45 }}>{error}</div>}
@@ -1369,7 +1374,7 @@ function DrawerAssistant({ role }: { role: Role }) {
         <div style={{ marginTop: 12, background: '#fdf7ea', border: '1px solid #e4d8bf', borderRadius: 10, padding: '12px 14px' }}>
           {loading ? (
             <div style={{ fontSize: 12.5, color: '#9a8f77' }}>
-              Writing your {kind === 'cover' ? 'cover letter' : 'follow-up'}…
+              Writing your {kind === 'cover' ? 'cover letter' : kind === 'prep' ? 'interview prep' : 'follow-up'}…
             </div>
           ) : (
             <>

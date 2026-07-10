@@ -31,7 +31,7 @@ let _anthropic: Anthropic | null = null;
 const openai = () => (_openai ??= new OpenAI()); // reads OPENAI_API_KEY
 const anthropic = () => (_anthropic ??= new Anthropic()); // reads ANTHROPIC_API_KEY
 
-export type GenKind = 'cover' | 'followup';
+export type GenKind = 'cover' | 'followup' | 'prep';
 
 function roleContext(role: Role): string {
   const lines = [
@@ -95,14 +95,46 @@ ${roleContext(role)}
 ${candidateProfile()}`;
 }
 
+function prepPrompt(role: Role, extra?: string): string {
+  return `Create a concise, practical interview-prep primer for ${CANDIDATE_NAME}, who has a phone
+screen or interview coming up for the role below. Use these short, labeled sections (plain text
+headers, no markdown):
+
+SNAPSHOT — 2-3 sentences on what this company likely does and what this role is really about, inferred
+from the title and industry. If you're not certain of a company specific, say "verify" rather than
+inventing it.
+LIKELY QUESTIONS — 6-8 questions they may ask for this role and level, each with a one-line angle on
+how ${CANDIDATE_NAME} should answer (drawing on the resume).
+YOUR EDGE — 3-4 talking points that connect ${CANDIDATE_NAME}'s real resume achievements (use the
+actual numbers) to what this role needs.
+SMART QUESTIONS TO ASK — 4-5 thoughtful questions for the interviewer.
+PREP CHECKLIST — 4-6 concrete things to review or research beforehand.
+
+Ground "YOUR EDGE" strictly in the resume; never invent employers, metrics, or company facts.
+${extra ? `\nExtra focus from the candidate: ${extra}` : ''}
+
+=== TARGET ROLE ===
+${roleContext(role)}
+
+=== CANDIDATE RESUME ===
+${candidateProfile()}`;
+}
+
+function promptFor(kind: GenKind, role: Role, extra?: string): string {
+  if (kind === 'cover') return coverPrompt(role, extra);
+  if (kind === 'followup') return followupPrompt(role, extra);
+  return prepPrompt(role, extra);
+}
+
 export async function generate(kind: GenKind, role: Role, extra?: string): Promise<string> {
-  const prompt = kind === 'cover' ? coverPrompt(role, extra) : followupPrompt(role, extra);
+  const prompt = promptFor(kind, role, extra);
+  const maxTokens = kind === 'prep' ? 2400 : 1600;
   const provider = activeProvider();
 
   if (provider === 'openai') {
     const res = await openai().chat.completions.create({
       model: OPENAI_MODEL,
-      max_tokens: 1600,
+      max_tokens: maxTokens,
       messages: [
         { role: 'system', content: SYSTEM },
         { role: 'user', content: prompt },
@@ -114,7 +146,7 @@ export async function generate(kind: GenKind, role: Role, extra?: string): Promi
   if (provider === 'anthropic') {
     const res = await anthropic().messages.create({
       model: ANTHROPIC_MODEL,
-      max_tokens: 1600,
+      max_tokens: maxTokens,
       system: SYSTEM,
       thinking: { type: 'adaptive' },
       messages: [{ role: 'user', content: prompt }],

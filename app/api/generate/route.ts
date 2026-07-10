@@ -14,7 +14,8 @@ export async function POST(req: NextRequest) {
   }
   try {
     const body = (await req.json()) as { kind?: GenKind; role?: Partial<Role>; extra?: string };
-    const kind = body.kind === 'followup' ? 'followup' : 'cover';
+    const kind: GenKind =
+      body.kind === 'followup' ? 'followup' : body.kind === 'prep' ? 'prep' : 'cover';
     const role = body.role;
     if (!role?.co || !role?.role) {
       return NextResponse.json({ error: 'role.co and role.role are required' }, { status: 400 });
