@@ -48,6 +48,26 @@ function dedupe(listings: Listing[]): Listing[] {
   });
 }
 
+// Fast-food/QSR brands + junior-role words to exclude. Single tokens only
+// (Adzuna treats what_exclude as space-separated terms, not phrases). Avoid
+// generic words like "food"/"server" that appear in legitimate senior postings.
+const EXCLUDE_TERMS = [
+  'nurse', 'rn', 'cna', 'caregiver', 'driver', 'warehouse',
+  'cashier', 'dishwasher', 'busser', 'barista', 'crew', 'qsr', 'franchise', 'hostess',
+  'mcdonalds', 'wendys', 'chipotle', 'dominos', 'popeyes', 'sonic', 'hardees',
+  'subway', 'kfc', 'arbys', 'zaxbys', 'bojangles', 'cookout',
+].join(' ');
+
+/** GET with one retry on a 429 (Adzuna rate-limit) after a short pause. */
+async function fetchWithRetry(url: string): Promise<Response> {
+  let res = await fetch(url, { cache: 'no-store' });
+  if (res.status === 429) {
+    await new Promise((r) => setTimeout(r, 700));
+    res = await fetch(url, { cache: 'no-store' });
+  }
+  return res;
+}
+
 async function searchAdzuna(
   query: string,
   track: string,
@@ -63,16 +83,18 @@ async function searchAdzuna(
   // hits titles like "Beverage Director", not a Sous Chef whose description happens
   // to mention food & beverage. This is the key to relevant results.
   url.searchParams.set('title_only', query);
-  // Prune obviously-irrelevant job types that occasionally slip through.
-  url.searchParams.set('what_exclude', 'nurse RN CNA caregiver driver warehouse cashier dishwasher');
+  // what_exclude scans the FULL posting (title + description), so it catches
+  // fast-food / QSR and junior roles by their tell-tale words even when the
+  // title is a generic "manager". Single space-separated tokens only.
+  url.searchParams.set('what_exclude', EXCLUDE_TERMS);
   url.searchParams.set('sort_by', 'relevance');
-  // `where` is optional: null means a nationwide search (used for remote tracks).
+  // `where` is optional: null means a nationwide search (remote + aviation tracks).
   if (where) {
     url.searchParams.set('where', where);
     url.searchParams.set('distance', '50'); // km (~30 mi) around the location
   }
 
-  const res = await fetch(url.toString(), { cache: 'no-store' });
+  const res = await fetchWithRetry(url.toString());
   if (!res.ok) throw new Error(`Adzuna ${res.status}`);
   const data = await res.json();
   return (data.results || []).map((j: any, i: number): Listing => ({
@@ -210,7 +232,7 @@ export async function fetchRecommendations(
     return runProvider(provider, kw, q.track, perQuery, where);
   });
 
-  const settled = await runWithConcurrency(tasks, 5);
+  const settled = await runWithConcurrency(tasks, 4);
   settled.forEach((r, i) => {
     if (r.status === 'fulfilled') {
       all.push(...r.value);

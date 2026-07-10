@@ -3,6 +3,7 @@ import { fetchRecommendations, type RecQuery } from '@/lib/jobapi';
 import { REC_TRACKS } from '@/lib/recTracks';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 30; // several throttled Adzuna queries per refresh
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);

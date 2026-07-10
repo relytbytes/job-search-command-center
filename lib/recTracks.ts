@@ -16,41 +16,48 @@ export type RecTrack = { track: string; phrases: string[]; where?: string | null
 // words that appear in real titles (no stopwords like "and") and be specific
 // enough to the lane's industry — generic titles like "market development manager"
 // pull cross-industry noise, so they're avoided here.
+// Two exact-title phrases per lane (fewer, higher-signal queries → less noise and
+// fewer rate-limit failures). "general manager" is deliberately omitted — it is the
+// biggest fast-food/QSR magnet; the exclude list in jobapi.ts filters the rest.
 export const REC_TRACKS: RecTrack[] = [
   {
     track: 'Beverage / Wine Director',
-    phrases: ['beverage director', 'wine director', 'sommelier'],
+    phrases: ['beverage director', 'wine director'],
   },
   {
     track: 'Wine & Spirits Sales / Distribution',
-    phrases: ['wine sales', 'spirits sales', 'beverage sales manager'],
+    phrases: ['wine sales', 'spirits sales'],
   },
   {
     track: 'Restaurant / F&B Management',
-    phrases: ['food beverage director', 'restaurant general manager', 'restaurant manager'],
+    phrases: ['food beverage director', 'restaurant general manager'],
   },
   {
     track: 'Hospitality & B2B Sales / Accounts',
-    phrases: ['key account manager', 'business development manager', 'territory sales manager'],
+    phrases: ['key account manager', 'business development manager'],
   },
   {
     track: 'Remote Hospitality Tech Sales',
-    phrases: ['restaurant account executive', 'hospitality account executive', 'restaurant customer success'],
+    phrases: ['restaurant account executive', 'hospitality account executive'],
     where: null,
   },
   {
     track: 'Procurement / Purchasing / Inventory',
-    phrases: ['procurement manager', 'purchasing manager', 'buyer'],
+    phrases: ['procurement manager', 'purchasing manager'],
   },
-  // Re-added at Tyler's request: he holds an Associate in Aviation Management and a
-  // B.S. in Management Information Systems, and has multi-unit operations experience.
+  // Operations / management — corporate ops titles (not "general manager", which
+  // pulls QSR). Tyler has multi-unit ops experience + a B.S. in MIS.
   {
     track: 'Operations & General Management',
-    phrases: ['operations manager', 'general manager', 'operations director'],
+    phrases: ['operations manager', 'operations director'],
   },
+  // Aviation — run NATIONWIDE (where: null): there are almost no aviation-management
+  // titles within 30mi of Raleigh, so a local search returns nothing. A stretch lane
+  // (Associate in Aviation Management, no aviation work history); may mean relocation.
   {
     track: 'Aviation & Airport Operations',
-    phrases: ['airport operations', 'aviation manager', 'station manager'],
+    phrases: ['airport operations', 'aviation manager'],
+    where: null,
   },
 ];
 
