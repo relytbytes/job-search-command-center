@@ -210,7 +210,7 @@ export async function fetchRecommendations(
     return runProvider(provider, kw, q.track, perQuery, where);
   });
 
-  const settled = await runWithConcurrency(tasks, 3);
+  const settled = await runWithConcurrency(tasks, 5);
   settled.forEach((r, i) => {
     if (r.status === 'fulfilled') {
       all.push(...r.value);

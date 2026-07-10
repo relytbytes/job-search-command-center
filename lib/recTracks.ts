@@ -42,6 +42,16 @@ export const REC_TRACKS: RecTrack[] = [
     track: 'Procurement / Purchasing / Inventory',
     phrases: ['procurement manager', 'purchasing manager', 'buyer'],
   },
+  // Re-added at Tyler's request: he holds an Associate in Aviation Management and a
+  // B.S. in Management Information Systems, and has multi-unit operations experience.
+  {
+    track: 'Operations & General Management',
+    phrases: ['operations manager', 'general manager', 'operations director'],
+  },
+  {
+    track: 'Aviation & Airport Operations',
+    phrases: ['airport operations', 'aviation manager', 'station manager'],
+  },
 ];
 
 export const REC_TRACK_NAMES = REC_TRACKS.map((t) => t.track);

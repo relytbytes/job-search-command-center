@@ -18,6 +18,7 @@ It runs out of the box with the 55 seeded roles as demo data — no credentials 
 | --- | --- |
 | **Pipeline** | Drag-and-drop Kanban across 9 stages, plus a sortable table view. Live stats, focus queue, and filters by track & priority. Drag a card (or use the detail drawer) to change stage — it persists to your sheet. |
 | **Recommended** | New roles pulled from the job-search API, grouped by track. "+ Add to pipeline" appends them to your sheet. Already-tracked companies are flagged so you don't double-add. |
+| **Application Assistant** | Inside each role's detail drawer — one-click **cover letter** and **follow-up email** generation via Claude, tailored to that role and grounded in your resume (`lib/resume.ts`). Optional "what to emphasize" note; copy or regenerate. |
 | **Search Strings** | Your boolean search strings, grouped by lane, each with one-click copy. |
 | **Job Boards** | The curated board/recruiter directory beyond Indeed/LinkedIn/ZipRecruiter. |
 
@@ -71,7 +72,21 @@ accept, runs one query per track, and dedupes the results.
 (LinkedIn pursues it legally). This app never scrapes them — it uses aggregator APIs that are
 licensed to index those postings, which is the compliant way to surface the same listings.
 
-## 3. Deploy (for the "automatic" part)
+## 3. Enable the writing assistant (cover letters + follow-ups)
+
+Add an **Anthropic API key** so the "Application Assistant" in each role's drawer can draft cover
+letters and follow-up emails, tailored to the role and grounded in your resume:
+
+```
+ANTHROPIC_API_KEY=sk-ant-...        # from https://console.anthropic.com/
+ANTHROPIC_MODEL=claude-opus-4-8     # optional (this is the default)
+```
+
+Your resume content lives in `lib/resume.ts` (professional history only — no phone/personal email,
+since the repo is public). To change it without editing code, set `CANDIDATE_PROFILE` to your full
+resume text. Without a key, the buttons show a "not configured" message.
+
+## 4. Deploy (for the "automatic" part)
 
 The app needs an always-on host to keep the sheet synced and serve fresh recommendations. It's a
 standard Next.js app — [Vercel](https://vercel.com/) is the simplest target:

@@ -1036,11 +1036,190 @@ export default function Page() {
                   </div>
                 ))}
               </div>
+
+              <DrawerAssistant key={selRole.id} role={selRole} />
             </div>
           </div>
         </div>
       )}
     </div>
+  );
+}
+
+// ---- Application-writing assistant (in the detail drawer) ----
+function DrawerAssistant({ role }: { role: Role }) {
+  const [notes, setNotes] = useState('');
+  const [kind, setKind] = useState<'cover' | 'followup' | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [text, setText] = useState('');
+  const [error, setError] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  async function run(k: 'cover' | 'followup') {
+    setKind(k);
+    setLoading(true);
+    setError('');
+    setText('');
+    setCopied(false);
+    try {
+      const res = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ kind: k, role, extra: notes.trim() || undefined }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Generation failed');
+      setText(data.text || '');
+    } catch (e: any) {
+      setError(e?.message || 'Generation failed');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const btn = (active: boolean): CSSProperties => ({
+    fontFamily: sans,
+    fontSize: 12.5,
+    fontWeight: 600,
+    padding: '8px 14px',
+    borderRadius: 8,
+    cursor: loading ? 'default' : 'pointer',
+    border: '1px solid ' + (active ? 'var(--accent)' : '#ddd6c9'),
+    background: active ? 'var(--accent)' : '#fffdf9',
+    color: active ? '#fff' : '#55504a',
+    opacity: loading && !active ? 0.6 : 1,
+    display: 'flex',
+    alignItems: 'center',
+    gap: 7,
+  });
+
+  return (
+    <div style={{ marginTop: 26, borderTop: '1px solid #e4ded1', paddingTop: 20 }}>
+      <div style={{ ...labelMono, marginBottom: 10 }}>Application Assistant</div>
+      <input
+        value={notes}
+        onChange={(e) => setNotes(e.target.value)}
+        placeholder="Optional: what to emphasize (e.g. wine program growth)…"
+        style={{
+          width: '100%',
+          padding: '8px 12px',
+          border: '1px solid #ddd6c9',
+          borderRadius: 8,
+          background: '#fffdf9',
+          fontFamily: sans,
+          fontSize: 12.5,
+          color: '#211f1b',
+          outline: 'none',
+          marginBottom: 10,
+        }}
+      />
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <button onClick={() => !loading && run('cover')} disabled={loading} style={btn(kind === 'cover')}>
+          {loading && kind === 'cover' && <Spinner />}
+          Cover letter
+        </button>
+        <button
+          onClick={() => !loading && run('followup')}
+          disabled={loading}
+          style={btn(kind === 'followup')}
+        >
+          {loading && kind === 'followup' && <Spinner />}
+          Follow-up email
+        </button>
+      </div>
+
+      {error && (
+        <div style={{ fontSize: 12, color: '#a8443a', marginTop: 12, lineHeight: 1.45 }}>{error}</div>
+      )}
+
+      {(loading || text) && (
+        <div
+          style={{
+            marginTop: 12,
+            background: '#fffdf9',
+            border: '1px solid #e4ded1',
+            borderRadius: 10,
+            padding: '12px 14px',
+          }}
+        >
+          {loading ? (
+            <div style={{ fontSize: 12.5, color: '#8a857b' }}>
+              Writing your {kind === 'cover' ? 'cover letter' : 'follow-up'}…
+            </div>
+          ) : (
+            <>
+              <div
+                style={{
+                  fontSize: 13,
+                  color: '#33302b',
+                  lineHeight: 1.5,
+                  whiteSpace: 'pre-wrap',
+                  fontFamily: sans,
+                }}
+              >
+                {text}
+              </div>
+              <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                <button
+                  onClick={() => {
+                    try {
+                      navigator.clipboard.writeText(text);
+                    } catch {}
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 1400);
+                  }}
+                  style={{
+                    fontFamily: sans,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    padding: '6px 12px',
+                    borderRadius: 8,
+                    border: '1px solid ' + (copied ? '#1f8a6d' : '#ddd6c9'),
+                    background: copied ? '#e1f2ec' : '#f2ede3',
+                    color: copied ? '#1f8a6d' : '#55504a',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {copied ? 'Copied ✓' : 'Copy'}
+                </button>
+                <button
+                  onClick={() => kind && run(kind)}
+                  style={{
+                    fontFamily: sans,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    padding: '6px 12px',
+                    borderRadius: 8,
+                    border: '1px solid #ddd6c9',
+                    background: '#f2ede3',
+                    color: '#55504a',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Regenerate
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Spinner() {
+  return (
+    <span
+      style={{
+        width: 12,
+        height: 12,
+        border: '2px solid rgba(255,255,255,0.5)',
+        borderTopColor: '#fff',
+        borderRadius: '50%',
+        display: 'inline-block',
+        animation: 'spin 0.7s linear infinite',
+      }}
+    />
   );
 }
 
