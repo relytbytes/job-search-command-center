@@ -9,11 +9,11 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const only = searchParams.get('track'); // optional: restrict to one track
   const custom = searchParams.get('q'); // optional: a raw query overriding the presets
-  const perQuery = Math.min(Number(searchParams.get('per') || 8), 15);
+  const perQuery = Math.min(Number(searchParams.get('per') || 12), 20);
 
   let queries: RecQuery[];
   if (custom) {
-    queries = [{ text: custom, track: only || 'Custom' }];
+    queries = [{ text: custom, track: only || `Search: “${custom}”` }];
   } else {
     const tracks = only ? REC_TRACKS.filter((t) => t.track === only) : REC_TRACKS;
     // One exact-phrase query per title within each track.

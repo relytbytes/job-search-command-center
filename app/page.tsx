@@ -1534,12 +1534,21 @@ function RecommendedTab(props: { existing: Role[]; writable: boolean; onAdded: (
   const [loaded, setLoaded] = useState(false);
   const [added, setAdded] = useState<Record<string, 'saving' | 'done' | 'error'>>({});
   const [filter, setFilter] = useState('All');
+  const [qText, setQText] = useState('');
+  const [lastQ, setLastQ] = useState('');
 
-  async function load(f: string = filter) {
-    setFilter(f);
+  async function load(f: string = filter, customQ?: string) {
+    const isCustom = customQ !== undefined || (f === '__custom' && !!lastQ);
+    const q = customQ !== undefined ? customQ : lastQ;
+    setFilter(isCustom ? '__custom' : f);
+    if (customQ !== undefined) setLastQ(customQ);
     setLoading(true);
     try {
-      const url = f === 'All' ? '/api/search' : `/api/search?track=${encodeURIComponent(f)}`;
+      const url = isCustom
+        ? `/api/search?q=${encodeURIComponent(q)}`
+        : f === 'All'
+        ? '/api/search'
+        : `/api/search?track=${encodeURIComponent(f)}`;
       const res = await fetch(url);
       const data = await res.json();
       setListings(data.listings || []);
@@ -1652,9 +1661,70 @@ function RecommendedTab(props: { existing: Role[]; writable: boolean; onAdded: (
         {providerLabel}
       </div>
 
+      {/* free-text local search */}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!loading && qText.trim()) load(undefined, qText.trim());
+        }}
+        style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}
+      >
+        <div style={{ position: 'relative', flex: 1, minWidth: 220 }}>
+          <span
+            style={{ position: 'absolute', left: 13, top: '50%', transform: 'translateY(-50%)', color: '#a89d84', fontSize: 14 }}
+          >
+            ⌕
+          </span>
+          <input
+            value={qText}
+            onChange={(e) => setQText(e.target.value)}
+            placeholder="Search any title or keyword in the Triangle (e.g. beverage director)…"
+            style={{
+              width: '100%',
+              padding: '10px 14px 10px 32px',
+              border: '1px solid #ddd0b5',
+              borderRadius: 11,
+              background: '#fdf7ea',
+              fontFamily: sans,
+              fontSize: 14,
+              color: '#2f2a23',
+              outline: 'none',
+            }}
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={loading || !qText.trim()}
+          style={{
+            fontFamily: jost,
+            fontSize: 13.5,
+            fontWeight: 600,
+            padding: '9px 18px',
+            borderRadius: 11,
+            border: 'none',
+            background: 'var(--accent)',
+            color: '#fff',
+            cursor: loading || !qText.trim() ? 'default' : 'pointer',
+            opacity: loading || !qText.trim() ? 0.6 : 1,
+          }}
+        >
+          Search
+        </button>
+      </form>
+
+      <div style={{ ...eyebrow, marginBottom: 8 }}>Or pick a lane</div>
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 22 }}>
         {[{ key: 'All', label: 'All Tracks' }, ...REC_TRACK_NAMES.map((t) => ({ key: t, label: t }))].map((c) => (
-          <button key={c.key} onClick={() => !loading && load(c.key)} style={chipStyle(filter === c.key)}>
+          <button
+            key={c.key}
+            onClick={() => {
+              if (loading) return;
+              setQText('');
+              setLastQ('');
+              load(c.key);
+            }}
+            style={chipStyle(filter === c.key)}
+          >
             {c.label}
           </button>
         ))}

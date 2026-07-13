@@ -105,10 +105,11 @@ async function searchAdzuna(
   // `title_only` matches the words in the job TITLE only — so "beverage director"
   // hits titles like "Beverage Director", not a Sous Chef whose description happens
   // to mention food & beverage. This is the key to relevant results.
-  url.searchParams.set('title_only', query);
-  // what_exclude scans the FULL posting (title + description), so it catches
-  // fast-food / QSR and junior roles by their tell-tale words even when the
-  // title is a generic "manager". Single space-separated tokens only.
+  // `what` ANDs the query words across title + description — broad enough to
+  // surface plenty of local roles (exact-title matching returned too few), but
+  // far tighter than matching ANY single word. Fast-food/QSR noise is handled by
+  // what_exclude (which also scans the full posting) plus the location filter.
+  url.searchParams.set('what', query);
   url.searchParams.set('what_exclude', EXCLUDE_TERMS);
   url.searchParams.set('sort_by', 'relevance');
   // `where` is optional: null means a nationwide search (remote + aviation tracks).
